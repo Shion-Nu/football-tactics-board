@@ -9,6 +9,16 @@ class TacticalBoard:
     PITCH_COLOR = "#2e8b57"
     FOOTER_COLOR = "#1e5c3a"
     TEMP_FILE = "temp_save.json"
+    
+    # フォーメーション座標データ（ホーム基準：左向き）
+    FORMATIONS = {
+        "4-3-3": [(60,250), (150,100), (150,200), (150,300), (150,400), (240,150), (240,250), (240,350), (350,100), (350,250), (350,400)],
+        "4-4-2": [(60,250), (150,100), (150,200), (150,300), (150,400), (250,80), (250,190), (250,310), (250,420), (380,200), (380,300)],
+        "3-5-2": [(60,250), (140,150), (140,250), (140,350), (250,50), (230,150), (250,250), (230,350), (250,450), (380,200), (380,300)],
+        "4-2-3-1": [(60,250), (150,100), (150,200), (150,300), (150,400), (230,200), (230,300), (320,100), (320,250), (320,400), (400,250)],
+        "5-3-2": [(60,250), (140,80), (140,170), (140,250), (140,330), (140,420), (250,150), (250,250), (250,350), (380,180), (380,320)],
+        "3-4-2-1": [(60,250), (140,150), (140,250), (140,350), (230,80), (230,190), (230,310), (230,420), (330,180), (330,320), (410,250)]
+    }
 
     def __init__(self, root):
         self.root = root
@@ -16,6 +26,7 @@ class TacticalBoard:
         self.root.resizable(False, False)
         
         self.current_file_path = None # 現在開いているファイルのパスを保持
+        self.player_id_counter = 0 # 選手ID生成用カウンター
 
         # --- メインメニュー ---
         menu_frame = tk.Frame(root)
@@ -82,7 +93,8 @@ class TacticalBoard:
         c.create_text(425, 515, text="=== FOOTBALL TACTICS BOARD / AUTO-SAVED ===", fill="#ccc", font=("Arial", 9, "bold"))
 
     def create_player(self, x, y, num, name, team_tag, role="", memo=""):
-        tag = f"p_{team_tag}_{int(time.time() * 1000)}_{num}"
+        self.player_id_counter += 1
+        tag = f"p_{team_tag}_{self.player_id_counter}_{num}"
         style = self.team_styles.get(team_tag, self.team_styles["ball"])
         t_color = style["fg"]
 
@@ -108,17 +120,8 @@ class TacticalBoard:
         self.canvas.delete(team)
         self.selected_tags = []
         
-        # 座標データ（ホーム基準：左向き）
-        pos_data = {
-            "4-3-3": [(60,250), (150,100), (150,200), (150,300), (150,400), (240,150), (240,250), (240,350), (350,100), (350,250), (350,400)],
-            "4-4-2": [(60,250), (150,100), (150,200), (150,300), (150,400), (250,80), (250,190), (250,310), (250,420), (380,200), (380,300)],
-            "3-5-2": [(60,250), (140,150), (140,250), (140,350), (250,50), (230,150), (250,250), (230,350), (250,450), (380,200), (380,300)],
-            "4-2-3-1": [(60,250), (150,100), (150,200), (150,300), (150,400), (230,200), (230,300), (320,100), (320,250), (320,400), (400,250)],
-            "5-3-2": [(60,250), (140,80), (140,170), (140,250), (140,330), (140,420), (250,150), (250,250), (250,350), (380,180), (380,320)],
-            "3-4-2-1": [(60,250), (140,150), (140,250), (140,350), (230,80), (230,190), (230,310), (230,420), (330,180), (330,320), (410,250)]
-        }
-        
-        raw_pos = pos_data[fmt]
+        if fmt not in self.FORMATIONS: return
+        raw_pos = self.FORMATIONS[fmt]
         prefix = "H" if team == "home" else "A"
         
         for i, (px, py) in enumerate(raw_pos):
@@ -220,14 +223,17 @@ class TacticalBoard:
                 messagebox.showerror("エラー", f"読込に失敗しました: {e}")
 
     def export_image(self):
-        """現在のキャンバスを高画質なベクター画像(EPS)として書き出す"""
+        """現在のキャンバスをベクター画像(EPS)として書き出す"""
         file_path = filedialog.asksaveasfilename(
             defaultextension=".eps",
             filetypes=[("Vector Image (EPS)", "*.eps"), ("All Files", "*.*")]
         )
         if file_path:
-            self.canvas.postscript(file=file_path, colormode='color')
-            messagebox.showinfo("エクスポート完了", "高画質なEPS形式で保存しました。\nIllustrator等で編集したり、高画質プリントが可能です。")
+            try:
+                self.canvas.postscript(file=file_path, colormode='color')
+                messagebox.showinfo("エクスポート完了", "EPS形式で保存しました。\nIllustrator等で編集したり、プリントが可能です。")
+            except Exception as e:
+                messagebox.showerror("エラー", f"出力に失敗しました: {e}")
 
     def reset_board(self):
         """ボードを初期状態にリセットする"""
