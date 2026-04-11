@@ -36,6 +36,7 @@ class TacticalBoard:
         # 保存・読込
         tk.Button(menu_frame, text="💾 保存", command=self.save_board).pack(side=tk.RIGHT, padx=5)
         tk.Button(menu_frame, text="📂 読込", command=self.load_board).pack(side=tk.RIGHT)
+        tk.Button(menu_frame, text="📸 画像出力", command=self.export_image).pack(side=tk.RIGHT, padx=5)
         tk.Button(menu_frame, text="✨ 新規", command=self.reset_board).pack(side=tk.RIGHT, padx=5)
 
         # --- キャンバス設定 ---
@@ -78,7 +79,7 @@ class TacticalBoard:
         c.create_rectangle(705, 125, 825, 375, outline="white", width=2) # 右PA
         
         c.create_rectangle(0, 500, self.w, self.h, fill=self.FOOTER_COLOR, outline="") 
-        c.create_text(425, 515, text="=== TACTICAL BOARD / AUTO-SAVED ===", fill="#ccc", font=("Arial", 9, "bold"))
+        c.create_text(425, 515, text="=== FOOTBALL TACTICS BOARD / AUTO-SAVED ===", fill="#ccc", font=("Arial", 9, "bold"))
 
     def create_player(self, x, y, num, name, team_tag, role="", memo=""):
         tag = f"p_{team_tag}_{int(time.time() * 1000)}_{num}"
@@ -217,6 +218,16 @@ class TacticalBoard:
                 messagebox.showinfo("読込", "読込が完了しました。") # 読込成功メッセージを追加
             except Exception as e:
                 messagebox.showerror("エラー", f"読込に失敗しました: {e}")
+
+    def export_image(self):
+        """現在のキャンバスを高画質なベクター画像(EPS)として書き出す"""
+        file_path = filedialog.asksaveasfilename(
+            defaultextension=".eps",
+            filetypes=[("Vector Image (EPS)", "*.eps"), ("All Files", "*.*")]
+        )
+        if file_path:
+            self.canvas.postscript(file=file_path, colormode='color')
+            messagebox.showinfo("エクスポート完了", "高画質なEPS形式で保存しました。\nIllustrator等で編集したり、高画質プリントが可能です。")
 
     def reset_board(self):
         """ボードを初期状態にリセットする"""
@@ -447,6 +458,12 @@ class TacticalBoard:
                 self.canvas.itemconfig(item, outline="black", width=1)
 
 if __name__ == "__main__":
+    # Windowsで高解像度ディスプレイを使用している場合に、文字のぼやけを防ぐ設定
+    try:
+        from ctypes import windll
+        windll.shcore.SetProcessDpiAwareness(1)
+    except Exception:
+        pass
     root = tk.Tk()
     app = TacticalBoard(root)
     root.mainloop()
