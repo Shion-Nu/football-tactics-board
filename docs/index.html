@@ -455,7 +455,7 @@
       <circle cx="12" cy="12" r="10" stroke="#10b981" stroke-width="1.8" />
       <path d="M12 2C10 5 10 19 12 22M12 2C14 5 14 19 12 22M2.5 9h19M2.5 15h19" stroke="#10b981" stroke-width="1.2" />
     </svg>
-    <h1>SOCCER TACTICS BOARD</h1>
+    <h1>FOOTBALL TACTICS BOARD</h1>
     <span class="badge">PROFESSIONAL</span>
     <div class="autosave-dot">
       <div class="dot"></div>AUTO-SAVED
@@ -564,6 +564,7 @@
     let nextId = 1;
     let editingPlayerId = null;
     let confirmCallback = null;
+    let currentFileHandle = null;
     let curFormation = { home: '4-3-3', away: '4-3-3' };
     let hasDragged = false;
     let mouseDownPos = null;
@@ -887,15 +888,34 @@
         teamStyles, formations: curFormation
       };
     }
-    function saveBoard() {
-      const blob = new Blob([JSON.stringify(getBoardData(), null, 2)], { type: 'application/json' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `tactics_${new Date().toISOString().slice(0, 10)}.json`;
-      a.click(); showToast('💾 保存しました', 'success');
+    async function saveBoard() {
+      const data = JSON.stringify(getBoardData(), null, 2);
+      if (window.showSaveFilePicker) {
+        try {
+          if (!currentFileHandle) {
+            currentFileHandle = await window.showSaveFilePicker({
+              suggestedName: `tactics_${new Date().toISOString().slice(0, 10)}.json`,
+              types: [{ description: 'JSON File', accept: { 'application/json': ['.json'] } }],
+            });
+          }
+          const writable = await currentFileHandle.createWritable();
+          await writable.write(data);
+          await writable.close();
+          showToast('💾 保存（上書き）しました', 'success');
+        } catch (err) {
+          if (err.name !== 'AbortError') showToast('保存エラー: ' + err.message, 'error');
+        }
+      } else {
+        const blob = new Blob([data], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `tactics_${new Date().toISOString().slice(0, 10)}.json`;
+        a.click(); showToast('💾 保存しました', 'success');
+      }
     }
     function loadBoard() { document.getElementById('file-input').click(); }
     function handleFileLoad(e) {
+      currentFileHandle = null;
       const file = e.target.files[0]; if (!file) return;
       const reader = new FileReader();
       reader.onload = ev => {
@@ -920,6 +940,7 @@
     }
     function newBoard() {
       showConfirm('新規作成', '現在のボードをリセットして新規作成しますか？', () => {
+        currentFileHandle = null;
         players = []; selectedIds = [];
         teamStyles = { home: { bg: '#f8fafc', fg: 'black' }, away: { bg: '#1a6eb5', fg: 'white' }, ball: { bg: 'white', fg: 'black' } };
         changeFormation('home', '4-3-3'); changeFormation('away', '4-3-3');
