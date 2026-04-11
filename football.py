@@ -12,7 +12,7 @@ class TacticalBoard:
 
     def __init__(self, root):
         self.root = root
-        self.root.title("Soccer Tactics Board - Professional Formations")
+        self.root.title("Football Tactics Board - Professional Formations")
         self.root.resizable(False, False)
         
         self.current_file_path = None # 現在開いているファイルのパスを保持
