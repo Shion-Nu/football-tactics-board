@@ -1,677 +1,986 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Soccer Tactics Board | プロフェッショナル戦術ボード</title>
+  <title>Football Tactics Board | プロフェッショナル戦術ボード</title>
   <meta name="description" content="プロフェッショナルなサッカー戦術ボード。フォーメーション設定、選手ドラッグ配置、戦術立案を直感的に行えるWebアプリ。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Rajdhani:wght@600;700&display=swap"
+    rel="stylesheet">
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
     :root {
       --bg: #0a0f1a;
       --surface: #111827;
       --surface2: #1a2332;
-      --border: rgba(255,255,255,0.08);
+      --border: rgba(255, 255, 255, 0.08);
       --text: #e2e8f0;
       --text-muted: #64748b;
       --accent: #10b981;
       --pitch: #2e8b57;
     }
-    html, body { height: 100%; font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
+
+    html,
+    body {
+      height: 100%;
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+    }
 
     header {
-      display: flex; align-items: center; gap: 12px; padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 20px;
       background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
       border-bottom: 1px solid var(--border);
     }
-    header svg { flex-shrink: 0; }
+
+    header svg {
+      flex-shrink: 0;
+    }
+
     header h1 {
-      font-family: 'Rajdhani', sans-serif; font-size: 20px; font-weight: 700; letter-spacing: 1px;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 1px;
       background: linear-gradient(135deg, #10b981, #34d399);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
+
     header .badge {
-      font-size: 10px; padding: 2px 8px; background: rgba(16,185,129,0.15);
-      border: 1px solid rgba(16,185,129,0.3); border-radius: 20px; color: #10b981; font-weight: 600;
+      font-size: 10px;
+      padding: 2px 8px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 20px;
+      color: #10b981;
+      font-weight: 600;
     }
+
     header .autosave-dot {
-      margin-left: auto; display: flex; align-items: center; gap: 6px;
-      font-size: 11px; color: var(--text-muted);
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--text-muted);
     }
-    .dot { width: 6px; height: 6px; border-radius: 50%; background: #10b981; animation: pulse 2s infinite; }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #10b981;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: 0.3
+      }
+    }
 
     .toolbar {
-      display: flex; align-items: center; gap: 4px; padding: 8px 14px;
-      background: var(--surface); border-bottom: 1px solid var(--border); flex-wrap: wrap;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 14px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
     }
-    .tlabel { font-size: 10px; font-weight: 700; letter-spacing: 0.5px; padding: 0 4px; white-space: nowrap; }
-    .tlabel.home { color: #f8fafc; } .tlabel.away { color: #60a5fa; }
-    .tdiv { width: 1px; height: 22px; background: var(--border); margin: 0 8px; }
+
+    .tlabel {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      padding: 0 4px;
+      white-space: nowrap;
+    }
+
+    .tlabel.home {
+      color: #f8fafc;
+    }
+
+    .tlabel.away {
+      color: #60a5fa;
+    }
+
+    .tdiv {
+      width: 1px;
+      height: 22px;
+      background: var(--border);
+      margin: 0 8px;
+    }
+
     .btn {
-      font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 500;
-      padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px;
-      cursor: pointer; transition: all 0.15s ease; white-space: nowrap;
-      background: var(--surface2); color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 5px 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+      background: var(--surface2);
+      color: var(--text);
     }
-    .btn:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); transform: translateY(-1px); }
-    .btn:active { transform: translateY(0); }
-    .btn.home-btn { background: rgba(248,250,252,0.06); border-color: rgba(248,250,252,0.15); color: #f0f4f8; }
-    .btn.home-btn:hover { background: rgba(248,250,252,0.14); }
-    .btn.away-btn { background: rgba(59,130,246,0.08); border-color: rgba(59,130,246,0.25); color: #93c5fd; }
-    .btn.away-btn:hover { background: rgba(59,130,246,0.18); }
-    .btn.sub-btn { background: rgba(16,185,129,0.08); border-color: rgba(16,185,129,0.25); color: #6ee7b7; font-size: 10px; }
-    .btn.sub-btn:hover { background: rgba(16,185,129,0.18); }
-    .btn.util-btn { background: rgba(100,116,139,0.08); border-color: rgba(100,116,139,0.25); color: #94a3b8; }
-    .btn.util-btn:hover { background: rgba(100,116,139,0.18); }
-    .btn.active-fmt { border-color: #10b981 !important; background: rgba(16,185,129,0.18) !important; color: #10b981 !important; }
+
+    .btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-1px);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn.home-btn {
+      background: rgba(248, 250, 252, 0.06);
+      border-color: rgba(248, 250, 252, 0.15);
+      color: #f0f4f8;
+    }
+
+    .btn.home-btn:hover {
+      background: rgba(248, 250, 252, 0.14);
+    }
+
+    .btn.away-btn {
+      background: rgba(59, 130, 246, 0.08);
+      border-color: rgba(59, 130, 246, 0.25);
+      color: #93c5fd;
+    }
+
+    .btn.away-btn:hover {
+      background: rgba(59, 130, 246, 0.18);
+    }
+
+    .btn.sub-btn {
+      background: rgba(16, 185, 129, 0.08);
+      border-color: rgba(16, 185, 129, 0.25);
+      color: #6ee7b7;
+      font-size: 10px;
+    }
+
+    .btn.sub-btn:hover {
+      background: rgba(16, 185, 129, 0.18);
+    }
+
+    .btn.util-btn {
+      background: rgba(100, 116, 139, 0.08);
+      border-color: rgba(100, 116, 139, 0.25);
+      color: #94a3b8;
+    }
+
+    .btn.util-btn:hover {
+      background: rgba(100, 116, 139, 0.18);
+    }
+
+    .btn.active-fmt {
+      border-color: #10b981 !important;
+      background: rgba(16, 185, 129, 0.18) !important;
+      color: #10b981 !important;
+    }
 
     .canvas-wrapper {
-      display: flex; justify-content: center; align-items: flex-start;
-      padding: 16px; background: #06090f;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 16px;
+      background: #06090f;
     }
+
     .canvas-container {
       position: relative;
-      box-shadow: 0 25px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05);
-      border-radius: 8px; overflow: hidden;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      overflow: hidden;
     }
-    canvas { display: block; cursor: default; max-width: 100%; }
+
+    canvas {
+      display: block;
+      cursor: default;
+      max-width: 100%;
+    }
 
     /* Modal */
     .modal-overlay {
-      display: none; position: fixed; inset: 0;
-      background: rgba(0,0,0,0.72); backdrop-filter: blur(4px);
-      z-index: 1000; justify-content: center; align-items: center;
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.72);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
     }
-    .modal-overlay.open { display: flex; animation: mfadeIn 0.15s ease; }
-    @keyframes mfadeIn { from{opacity:0;transform:scale(0.96)} to{opacity:1;transform:scale(1)} }
+
+    .modal-overlay.open {
+      display: flex;
+      animation: mfadeIn 0.15s ease;
+    }
+
+    @keyframes mfadeIn {
+      from {
+        opacity: 0;
+        transform: scale(0.96)
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1)
+      }
+    }
+
     .modal {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 14px; padding: 24px; width: 330px; max-width: 92vw;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+      width: 330px;
+      max-width: 92vw;
     }
-    .modal h2 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
-    .modal .team-badge { font-size: 11px; color: var(--text-muted); margin-bottom: 18px; }
-    .fg { margin-bottom: 14px; }
-    .fg label { display: block; font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
+
+    .modal h2 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .modal .team-badge {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 18px;
+    }
+
+    .fg {
+      margin-bottom: 14px;
+    }
+
+    .fg label {
+      display: block;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 5px;
+    }
+
     .fg input[type=text] {
-      width: 100%; padding: 8px 12px; background: var(--surface2);
-      border: 1px solid var(--border); border-radius: 6px; color: var(--text);
-      font-size: 13px; font-family: 'Inter', sans-serif; outline: none; transition: border-color 0.15s;
+      width: 100%;
+      padding: 8px 12px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 13px;
+      font-family: 'Inter', sans-serif;
+      outline: none;
+      transition: border-color 0.15s;
     }
-    .fg input[type=text]:focus { border-color: rgba(16,185,129,0.5); }
-    .fg input[type=text]:disabled { opacity: 0.35; cursor: not-allowed; }
-    .color-row { display: flex; gap: 8px; align-items: center; }
+
+    .fg input[type=text]:focus {
+      border-color: rgba(16, 185, 129, 0.5);
+    }
+
+    .fg input[type=text]:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .color-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
     .color-row input[type=color] {
-      width: 42px; height: 34px; border: 1px solid var(--border);
-      border-radius: 6px; cursor: pointer; background: none; padding: 2px;
+      width: 42px;
+      height: 34px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      background: none;
+      padding: 2px;
     }
-    .radio-group { display: flex; gap: 16px; }
-    .radio-group label { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text); cursor: pointer; font-weight: normal; text-transform: none; letter-spacing: 0; }
-    .modal-actions { display: flex; gap: 8px; margin-top: 20px; }
+
+    .radio-group {
+      display: flex;
+      gap: 16px;
+    }
+
+    .radio-group label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--text);
+      cursor: pointer;
+      font-weight: normal;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
     .btn-primary {
-      flex: 1; padding: 10px; background: linear-gradient(135deg, #059669, #10b981);
-      border: none; border-radius: 8px; color: white; font-family: 'Inter', sans-serif;
-      font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity 0.15s;
+      flex: 1;
+      padding: 10px;
+      background: linear-gradient(135deg, #059669, #10b981);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
     }
-    .btn-primary:hover { opacity: 0.88; }
+
+    .btn-primary:hover {
+      opacity: 0.88;
+    }
+
     .btn-cancel {
-      padding: 10px 16px; background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 8px; color: var(--text-muted); font-family: 'Inter', sans-serif;
-      font-size: 13px; cursor: pointer; transition: background 0.15s;
+      padding: 10px 16px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-muted);
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.15s;
     }
-    .btn-cancel:hover { background: rgba(255,255,255,0.06); color: var(--text); }
-    .confirm-modal { text-align: center; }
-    .confirm-modal .confirm-msg { font-size: 13px; color: var(--text-muted); margin: 8px 0 20px; }
+
+    .btn-cancel:hover {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+    }
+
+    .confirm-modal {
+      text-align: center;
+    }
+
+    .confirm-modal .confirm-msg {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin: 8px 0 20px;
+    }
 
     .toast {
-      position: fixed; bottom: 24px; right: 24px; padding: 11px 18px;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 8px; font-size: 13px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-      z-index: 2000; animation: slideUp 0.2s ease; display: flex; align-items: center; gap: 8px;
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      padding: 11px 18px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 13px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      z-index: 2000;
+      animation: slideUp 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
-    .toast.success { border-left: 3px solid #10b981; }
-    .toast.error   { border-left: 3px solid #ef4444; }
-    .toast.info    { border-left: 3px solid #3b82f6; }
-    @keyframes slideUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+    .toast.success {
+      border-left: 3px solid #10b981;
+    }
+
+    .toast.error {
+      border-left: 3px solid #ef4444;
+    }
+
+    .toast.info {
+      border-left: 3px solid #3b82f6;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(8px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0)
+      }
+    }
 
     .hint-bar {
-      text-align: center; padding: 5px; font-size: 10px; color: var(--text-muted);
-      background: var(--surface); border-top: 1px solid var(--border);
+      text-align: center;
+      padding: 5px;
+      font-size: 10px;
+      color: var(--text-muted);
+      background: var(--surface);
+      border-top: 1px solid var(--border);
     }
   </style>
 </head>
+
 <body>
 
-<header>
-  <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
-    <circle cx="12" cy="12" r="10" stroke="#10b981" stroke-width="1.8"/>
-    <path d="M12 2C10 5 10 19 12 22M12 2C14 5 14 19 12 22M2.5 9h19M2.5 15h19" stroke="#10b981" stroke-width="1.2"/>
-  </svg>
-  <h1>SOCCER TACTICS BOARD</h1>
-  <span class="badge">PROFESSIONAL</span>
-  <div class="autosave-dot"><div class="dot"></div>AUTO-SAVED</div>
-</header>
+  <header>
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="10" stroke="#10b981" stroke-width="1.8" />
+      <path d="M12 2C10 5 10 19 12 22M12 2C14 5 14 19 12 22M2.5 9h19M2.5 15h19" stroke="#10b981" stroke-width="1.2" />
+    </svg>
+    <h1>SOCCER TACTICS BOARD</h1>
+    <span class="badge">PROFESSIONAL</span>
+    <div class="autosave-dot">
+      <div class="dot"></div>AUTO-SAVED
+    </div>
+  </header>
 
-<div class="toolbar">
-  <span class="tlabel home">⚪ HOME</span>
-  <div id="home-fmts" style="display:flex;gap:3px;align-items:center;">
-    <button class="btn home-btn" onclick="changeFormation('home','4-3-3')" id="home-433">4-3-3</button>
-    <button class="btn home-btn" onclick="changeFormation('home','4-4-2')" id="home-442">4-4-2</button>
-    <button class="btn home-btn" onclick="changeFormation('home','3-5-2')" id="home-352">3-5-2</button>
-    <button class="btn home-btn" onclick="changeFormation('home','4-2-3-1')" id="home-4231">4-2-3-1</button>
-    <button class="btn home-btn" onclick="changeFormation('home','5-3-2')" id="home-532">5-3-2</button>
-    <button class="btn home-btn" onclick="changeFormation('home','3-4-2-1')" id="home-3421">3-4-2-1</button>
-    <button class="btn sub-btn" onclick="addSubstitutes('home')">+控え</button>
+  <div class="toolbar">
+    <span class="tlabel home">⚪ HOME</span>
+    <div id="home-fmts" style="display:flex;gap:3px;align-items:center;">
+      <button class="btn home-btn" onclick="changeFormation('home','4-3-3')" id="home-433">4-3-3</button>
+      <button class="btn home-btn" onclick="changeFormation('home','4-4-2')" id="home-442">4-4-2</button>
+      <button class="btn home-btn" onclick="changeFormation('home','3-5-2')" id="home-352">3-5-2</button>
+      <button class="btn home-btn" onclick="changeFormation('home','4-2-3-1')" id="home-4231">4-2-3-1</button>
+      <button class="btn home-btn" onclick="changeFormation('home','5-3-2')" id="home-532">5-3-2</button>
+      <button class="btn home-btn" onclick="changeFormation('home','3-4-2-1')" id="home-3421">3-4-2-1</button>
+      <button class="btn sub-btn" onclick="addSubstitutes('home')">+控え</button>
+    </div>
+    <div class="tdiv"></div>
+    <span class="tlabel away">🔵 AWAY</span>
+    <div id="away-fmts" style="display:flex;gap:3px;align-items:center;">
+      <button class="btn away-btn" onclick="changeFormation('away','4-3-3')" id="away-433">4-3-3</button>
+      <button class="btn away-btn" onclick="changeFormation('away','4-4-2')" id="away-442">4-4-2</button>
+      <button class="btn away-btn" onclick="changeFormation('away','3-5-2')" id="away-352">3-5-2</button>
+      <button class="btn away-btn" onclick="changeFormation('away','4-2-3-1')" id="away-4231">4-2-3-1</button>
+      <button class="btn away-btn" onclick="changeFormation('away','5-3-2')" id="away-532">5-3-2</button>
+      <button class="btn away-btn" onclick="changeFormation('away','3-4-2-1')" id="away-3421">3-4-2-1</button>
+      <button class="btn sub-btn" onclick="addSubstitutes('away')">+控え</button>
+    </div>
+    <div class="tdiv"></div>
+    <button class="btn util-btn" onclick="newBoard()" id="btn-new">✨ 新規</button>
+    <button class="btn util-btn" onclick="saveBoard()" id="btn-save">💾 保存</button>
+    <button class="btn util-btn" onclick="loadBoard()" id="btn-load">📂 読込</button>
   </div>
-  <div class="tdiv"></div>
-  <span class="tlabel away">🔵 AWAY</span>
-  <div id="away-fmts" style="display:flex;gap:3px;align-items:center;">
-    <button class="btn away-btn" onclick="changeFormation('away','4-3-3')" id="away-433">4-3-3</button>
-    <button class="btn away-btn" onclick="changeFormation('away','4-4-2')" id="away-442">4-4-2</button>
-    <button class="btn away-btn" onclick="changeFormation('away','3-5-2')" id="away-352">3-5-2</button>
-    <button class="btn away-btn" onclick="changeFormation('away','4-2-3-1')" id="away-4231">4-2-3-1</button>
-    <button class="btn away-btn" onclick="changeFormation('away','5-3-2')" id="away-532">5-3-2</button>
-    <button class="btn away-btn" onclick="changeFormation('away','3-4-2-1')" id="away-3421">3-4-2-1</button>
-    <button class="btn sub-btn" onclick="addSubstitutes('away')">+控え</button>
+
+  <div class="canvas-wrapper">
+    <div class="canvas-container">
+      <canvas id="pitch" width="850" height="650"></canvas>
+    </div>
   </div>
-  <div class="tdiv"></div>
-  <button class="btn util-btn" onclick="newBoard()" id="btn-new">✨ 新規</button>
-  <button class="btn util-btn" onclick="saveBoard()" id="btn-save">💾 保存</button>
-  <button class="btn util-btn" onclick="loadBoard()" id="btn-load">📂 読込</button>
-</div>
 
-<div class="canvas-wrapper">
-  <div class="canvas-container">
-    <canvas id="pitch" width="850" height="650"></canvas>
+  <div class="hint-bar">
+    ダブルクリック: 選手編集 ／ 右クリック: 選手削除 ／ ドラッグ: 移動 ／ Shift+クリック: 複数選択
   </div>
-</div>
 
-<div class="hint-bar">
-  ダブルクリック: 選手編集 ／ 右クリック: 選手削除 ／ ドラッグ: 移動 ／ Shift+クリック: 複数選択
-</div>
-
-<!-- Edit Modal -->
-<div class="modal-overlay" id="edit-modal">
-  <div class="modal">
-    <h2>選手プロファイル編集</h2>
-    <div class="team-badge" id="edit-team-label"></div>
-    <div class="fg"><label>選手名</label><input type="text" id="edit-name" placeholder="選手名"></div>
-    <div class="fg"><label>背番号</label><input type="text" id="edit-num" placeholder="番号" style="width:80px"></div>
-    <div class="fg"><label>役割 (FW, MF等)</label><input type="text" id="edit-role" placeholder="役割"></div>
-    <div class="fg"><label>メモ</label><input type="text" id="edit-memo" placeholder="メモ"></div>
-    <div class="fg">
-      <label>ユニフォーム（チーム全体に適用）</label>
-      <div class="color-row">
-        <input type="color" id="edit-bg-color" value="#ffffff">
-        <span style="font-size:11px;color:var(--text-muted)">ユニフォーム色</span>
+  <!-- Edit Modal -->
+  <div class="modal-overlay" id="edit-modal">
+    <div class="modal">
+      <h2>選手プロファイル編集</h2>
+      <div class="team-badge" id="edit-team-label"></div>
+      <div class="fg"><label>選手名</label><input type="text" id="edit-name" placeholder="選手名"></div>
+      <div class="fg"><label>背番号</label><input type="text" id="edit-num" placeholder="番号" style="width:80px"></div>
+      <div class="fg"><label>役割 (FW, MF等)</label><input type="text" id="edit-role" placeholder="役割"></div>
+      <div class="fg"><label>メモ</label><input type="text" id="edit-memo" placeholder="メモ"></div>
+      <div class="fg">
+        <label>ユニフォーム（チーム全体に適用）</label>
+        <div class="color-row">
+          <input type="color" id="edit-bg-color" value="#ffffff">
+          <span style="font-size:11px;color:var(--text-muted)">ユニフォーム色</span>
+        </div>
+      </div>
+      <div class="fg">
+        <label>文字色</label>
+        <div class="radio-group">
+          <label><input type="radio" name="fg-color" id="fg-white" value="white"> 白</label>
+          <label><input type="radio" name="fg-color" id="fg-black" value="black" checked> 黒</label>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeEditModal()">キャンセル</button>
+        <button class="btn-primary" onclick="saveEditModal()">保存して閉じる</button>
       </div>
     </div>
-    <div class="fg">
-      <label>文字色</label>
-      <div class="radio-group">
-        <label><input type="radio" name="fg-color" id="fg-white" value="white"> 白</label>
-        <label><input type="radio" name="fg-color" id="fg-black" value="black" checked> 黒</label>
+  </div>
+
+  <!-- Confirm Modal -->
+  <div class="modal-overlay" id="confirm-modal">
+    <div class="modal confirm-modal">
+      <h2 id="confirm-title">確認</h2>
+      <p class="confirm-msg" id="confirm-message"></p>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeConfirm(false)">キャンセル</button>
+        <button class="btn-primary" onclick="closeConfirm(true)">OK</button>
       </div>
     </div>
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeEditModal()">キャンセル</button>
-      <button class="btn-primary" onclick="saveEditModal()">保存して閉じる</button>
-    </div>
   </div>
-</div>
 
-<!-- Confirm Modal -->
-<div class="modal-overlay" id="confirm-modal">
-  <div class="modal confirm-modal">
-    <h2 id="confirm-title">確認</h2>
-    <p class="confirm-msg" id="confirm-message"></p>
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeConfirm(false)">キャンセル</button>
-      <button class="btn-primary" onclick="closeConfirm(true)">OK</button>
-    </div>
-  </div>
-</div>
+  <input type="file" id="file-input" accept=".json" style="display:none" onchange="handleFileLoad(event)">
 
-<input type="file" id="file-input" accept=".json" style="display:none" onchange="handleFileLoad(event)">
+  <script>
+    // ==================== State ====================
+    const canvas = document.getElementById('pitch');
+    const ctx = canvas.getContext('2d');
+    const W = 850, H = 650;
+    const PLAYER_R = 18, BALL_R = 10;
 
-<script>
-// ==================== State ====================
-const canvas = document.getElementById('pitch');
-const ctx = canvas.getContext('2d');
-const W = 850, H = 650;
-const PLAYER_R = 18, BALL_R = 10;
+    let players = [];
+    let teamStyles = {
+      home: { bg: '#f8fafc', fg: 'black' },
+      away: { bg: '#1a6eb5', fg: 'white' },
+      ball: { bg: 'white', fg: 'black' }
+    };
+    let selectedIds = [];
+    let dragData = null;
+    let isMovingGroup = false;
+    let selRect = null;
+    let nextId = 1;
+    let editingPlayerId = null;
+    let confirmCallback = null;
+    let curFormation = { home: '4-3-3', away: '4-3-3' };
+    let hasDragged = false;
+    let mouseDownPos = null;
+    let mouseDownPlayer = null;
 
-let players = [];
-let teamStyles = {
-  home: { bg: '#f8fafc', fg: 'black' },
-  away: { bg: '#1a6eb5', fg: 'white' },
-  ball: { bg: 'white',  fg: 'black' }
-};
-let selectedIds = [];
-let dragData = null;
-let isMovingGroup = false;
-let selRect = null;
-let nextId = 1;
-let editingPlayerId = null;
-let confirmCallback = null;
-let curFormation = { home: '4-3-3', away: '4-3-3' };
-let hasDragged = false;
-let mouseDownPos = null;
-let mouseDownPlayer = null;
+    // ==================== Formations (original coords) ====================
+    const FORMATIONS = {
+      '4-3-3': [[60, 250], [150, 100], [150, 200], [150, 300], [150, 400], [240, 150], [240, 250], [240, 350], [350, 100], [350, 250], [350, 400]],
+      '4-4-2': [[60, 250], [150, 100], [150, 200], [150, 300], [150, 400], [250, 80], [250, 190], [250, 310], [250, 420], [380, 200], [380, 300]],
+      '3-5-2': [[60, 250], [140, 150], [140, 250], [140, 350], [250, 50], [230, 150], [250, 250], [230, 350], [250, 450], [380, 200], [380, 300]],
+      '4-2-3-1': [[60, 250], [150, 100], [150, 200], [150, 300], [150, 400], [230, 200], [230, 300], [320, 100], [320, 250], [320, 400], [400, 250]],
+      '5-3-2': [[60, 250], [140, 80], [140, 170], [140, 250], [140, 330], [140, 420], [250, 150], [250, 250], [250, 350], [380, 180], [380, 320]],
+      '3-4-2-1': [[60, 250], [140, 150], [140, 250], [140, 350], [230, 80], [230, 190], [230, 310], [230, 420], [330, 180], [330, 320], [410, 250]]
+    };
 
-// ==================== Formations (original coords) ====================
-const FORMATIONS = {
-  '4-3-3':   [[60,250],[150,100],[150,200],[150,300],[150,400],[240,150],[240,250],[240,350],[350,100],[350,250],[350,400]],
-  '4-4-2':   [[60,250],[150,100],[150,200],[150,300],[150,400],[250,80],[250,190],[250,310],[250,420],[380,200],[380,300]],
-  '3-5-2':   [[60,250],[140,150],[140,250],[140,350],[250,50],[230,150],[250,250],[230,350],[250,450],[380,200],[380,300]],
-  '4-2-3-1': [[60,250],[150,100],[150,200],[150,300],[150,400],[230,200],[230,300],[320,100],[320,250],[320,400],[400,250]],
-  '5-3-2':   [[60,250],[140,80],[140,170],[140,250],[140,330],[140,420],[250,150],[250,250],[250,350],[380,180],[380,320]],
-  '3-4-2-1': [[60,250],[140,150],[140,250],[140,350],[230,80],[230,190],[230,310],[230,420],[330,180],[330,320],[410,250]]
-};
-
-// ==================== Player CRUD ====================
-function createPlayer(x, y, num, name, team, role='', memo='') {
-  const id = `p_${nextId++}`;
-  players.push({ id, x, y, num, name, team, role, memo });
-  return id;
-}
-
-function changeFormation(team, fmt) {
-  players = players.filter(p => p.team !== team);
-  selectedIds = selectedIds.filter(id => !players.find(p=>p.id===id && p.team!==team) !== undefined ? false : true);
-  selectedIds = [];
-  const prefix = team === 'home' ? 'H' : 'A';
-  FORMATIONS[fmt].forEach(([px,py], i) => {
-    const fx = team === 'home' ? px : 850 - px;
-    createPlayer(fx, py, String(i+1), `${prefix}_${i+1}`, team);
-  });
-  curFormation[team] = fmt;
-  updateFmtButtons();
-  autoSave(); render();
-}
-
-function addSubstitutes(team) {
-  const prefix = team === 'home' ? 'H' : 'A';
-  const startX = team === 'home' ? 40 : 470;
-  for (let i = 0; i < 11; i++) {
-    const px = i < 6 ? startX + i * 65 : startX + 32 + (i-6) * 65;
-    const py = i < 6 ? 538 : 598;
-    createPlayer(px, py, String(12+i), `${prefix}_${12+i}`, team);
-  }
-  autoSave(); render();
-}
-
-// ==================== Drawing ====================
-function drawPitch() {
-  // Grass
-  ctx.fillStyle = '#2e8b57'; ctx.fillRect(0, 0, W, 480);
-  // Stripes
-  for (let i = 0; i < 9; i++) {
-    if (i%2===0) { ctx.fillStyle='rgba(0,0,0,0.04)'; ctx.fillRect(25+i*89, 25, 89, 450); }
-  }
-  // Lines
-  ctx.strokeStyle = 'rgba(255,255,255,0.88)'; ctx.lineWidth = 2;
-  ctx.strokeRect(25, 25, 800, 450);
-  ctx.beginPath(); ctx.moveTo(425,25); ctx.lineTo(425,475); ctx.stroke();
-  ctx.beginPath(); ctx.arc(425,250,60,0,Math.PI*2); ctx.stroke();
-  // Center dot
-  ctx.fillStyle='white'; ctx.beginPath(); ctx.arc(425,250,4,0,Math.PI*2); ctx.fill();
-  // Left penalty + goal
-  ctx.strokeRect(25,125,120,250); ctx.strokeRect(25,175,50,150);
-  ctx.strokeStyle='rgba(255,255,255,0.55)'; ctx.strokeRect(0,207,22,86);
-  // Right penalty + goal
-  ctx.strokeStyle='rgba(255,255,255,0.88)';
-  ctx.strokeRect(705,125,120,250); ctx.strokeRect(775,175,50,150);
-  ctx.strokeStyle='rgba(255,255,255,0.55)'; ctx.strokeRect(828,207,22,86);
-  // Penalty spots
-  ctx.strokeStyle='rgba(255,255,255,0.88)';
-  ctx.fillStyle='white';
-  [[105,250],[745,250]].forEach(([x,y])=>{ ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill(); });
-  // Corner arcs
-  ctx.lineWidth=1.5;
-  [[25,25,0,Math.PI/2],[825,25,Math.PI/2,Math.PI],[25,475,-Math.PI/2,0],[825,475,Math.PI,3*Math.PI/2]].forEach(([x,y,s,e])=>{
-    ctx.beginPath(); ctx.arc(x,y,9,s,e); ctx.stroke();
-  });
-  // Footer
-  ctx.fillStyle='#1e5c3a'; ctx.fillRect(0,480,W,170);
-  ctx.strokeStyle='rgba(255,255,255,0.08)'; ctx.lineWidth=1;
-  ctx.beginPath(); ctx.moveTo(0,480); ctx.lineTo(W,480); ctx.stroke();
-  ctx.fillStyle='rgba(180,220,180,0.45)'; ctx.font='bold 10px Inter,Arial'; ctx.textAlign='center';
-  ctx.fillText('⚽  TACTICAL BOARD  |  AUTO-SAVED  ⚽', 425, 500);
-}
-
-function drawPlayer(p) {
-  const style = teamStyles[p.team] || teamStyles.ball;
-  const r = p.team==='ball' ? BALL_R : PLAYER_R;
-  const sel = selectedIds.includes(p.id);
-  ctx.save();
-  if (sel) { ctx.shadowColor='#facc15'; ctx.shadowBlur=14; }
-  // Drop shadow
-  if (p.team!=='ball') {
-    ctx.fillStyle='rgba(0,0,0,0.25)';
-    ctx.beginPath(); ctx.ellipse(p.x+1,p.y+3,r*0.85,r*0.4,0,0,Math.PI*2); ctx.fill();
-  }
-  // Circle background
-  ctx.beginPath(); ctx.arc(p.x,p.y,r,0,Math.PI*2);
-  if (p.team==='ball') {
-    const grd = ctx.createRadialGradient(p.x-3,p.y-3,1,p.x,p.y,r);
-    grd.addColorStop(0,'#fff'); grd.addColorStop(1,'#ccc');
-    ctx.fillStyle = grd;
-  } else {
-    ctx.fillStyle = style.bg;
-  }
-  ctx.fill();
-  // Border
-  ctx.strokeStyle = sel ? '#facc15' : 'rgba(0,0,0,0.45)';
-  ctx.lineWidth = sel ? 3 : 1.5; ctx.stroke();
-  ctx.shadowBlur = 0;
-  // Texts
-  if (p.team!=='ball') {
-    ctx.fillStyle = style.fg;
-    ctx.font='bold 10px Inter,Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(p.num, p.x, p.y);
-    ctx.font='bold 8.5px Inter,Arial'; ctx.textBaseline='alphabetic';
-    ctx.fillText(p.name, p.x, p.y+28);
-    if (p.role) { ctx.font='italic 8px Inter,Arial'; ctx.fillStyle=style.fg+'bb'; ctx.fillText(p.role,p.x,p.y+40); }
-  } else {
-    // Simple ball design
-    ctx.fillStyle='#222'; ctx.font='bold 11px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText('●', p.x, p.y);
-  }
-  ctx.restore();
-}
-
-function drawSelRect() {
-  if (!selRect) return;
-  const {x1,y1,x2,y2} = selRect;
-  ctx.save(); ctx.strokeStyle='#facc15'; ctx.lineWidth=1.5; ctx.setLineDash([5,4]);
-  ctx.strokeRect(Math.min(x1,x2),Math.min(y1,y2),Math.abs(x2-x1),Math.abs(y2-y1));
-  ctx.fillStyle='rgba(250,204,21,0.04)';
-  ctx.fillRect(Math.min(x1,x2),Math.min(y1,y2),Math.abs(x2-x1),Math.abs(y2-y1));
-  ctx.setLineDash([]); ctx.restore();
-}
-
-function render() {
-  ctx.clearRect(0,0,W,H);
-  drawPitch();
-  players.forEach(drawPlayer);
-  drawSelRect();
-}
-
-// ==================== Hit Test ====================
-function getPlayerAt(cx,cy) {
-  for (let i=players.length-1;i>=0;i--) {
-    const p=players[i], r=p.team==='ball'?BALL_R:PLAYER_R;
-    if ((cx-p.x)**2+(cy-p.y)**2<=(r+5)**2) return p;
-  }
-  return null;
-}
-
-function getCanvasPos(e) {
-  const rect=canvas.getBoundingClientRect();
-  return { x:(e.clientX-rect.left)*(W/rect.width), y:(e.clientY-rect.top)*(H/rect.height) };
-}
-
-// ==================== Mouse Events ====================
-canvas.addEventListener('mousedown', e => {
-  if (e.button!==0) return;
-  const pos = getCanvasPos(e);
-  mouseDownPos = pos; hasDragged = false;
-  const p = getPlayerAt(pos.x, pos.y);
-  if (p) {
-    mouseDownPlayer = p;
-    if (e.shiftKey) {
-      selectedIds.includes(p.id) ? (selectedIds=selectedIds.filter(i=>i!==p.id)) : selectedIds.push(p.id);
-    } else {
-      if (!selectedIds.includes(p.id)) selectedIds=[p.id];
+    // ==================== Player CRUD ====================
+    function createPlayer(x, y, num, name, team, role = '', memo = '') {
+      const id = `p_${nextId++}`;
+      players.push({ id, x, y, num, name, team, role, memo });
+      return id;
     }
-    isMovingGroup = selectedIds.length > 1 && selectedIds.includes(p.id);
-    dragData = { lastX:pos.x, lastY:pos.y };
-    render();
-  } else {
-    mouseDownPlayer = null;
-    const bbox = getSelBbox();
-    if (bbox && pos.x>=bbox.x1 && pos.x<=bbox.x2 && pos.y>=bbox.y1 && pos.y<=bbox.y2 && selectedIds.length>0) {
-      isMovingGroup=true; dragData={lastX:pos.x,lastY:pos.y};
-    } else {
-      isMovingGroup=false; selectedIds=[];
-      selRect={x1:pos.x,y1:pos.y,x2:pos.x,y2:pos.y};
-      dragData={lastX:pos.x,lastY:pos.y}; render();
-    }
-  }
-});
 
-canvas.addEventListener('mousemove', e => {
-  if (!dragData) return;
-  const pos=getCanvasPos(e);
-  const dx=pos.x-dragData.lastX, dy=pos.y-dragData.lastY;
-  if (Math.abs(pos.x-mouseDownPos.x)>4||Math.abs(pos.y-mouseDownPos.y)>4) hasDragged=true;
-  if (!hasDragged) return;
-  if (mouseDownPlayer && !e.shiftKey) {
-    const ids = (isMovingGroup && selectedIds.length>1) ? selectedIds : [mouseDownPlayer.id];
-    ids.forEach(id=>{ const p=players.find(p=>p.id===id); if(p){p.x+=dx;p.y+=dy;} });
-  } else if (isMovingGroup && !mouseDownPlayer) {
-    selectedIds.forEach(id=>{ const p=players.find(p=>p.id===id); if(p){p.x+=dx;p.y+=dy;} });
-  } else if (selRect) {
-    selRect.x2=pos.x; selRect.y2=pos.y;
-  }
-  dragData.lastX=pos.x; dragData.lastY=pos.y; render();
-});
-
-canvas.addEventListener('mouseup', e => {
-  if (e.button!==0) return;
-  if (selRect) {
-    const rx1=Math.min(selRect.x1,selRect.x2), ry1=Math.min(selRect.y1,selRect.y2);
-    const rx2=Math.max(selRect.x1,selRect.x2), ry2=Math.max(selRect.y1,selRect.y2);
-    if (rx2-rx1>5||ry2-ry1>5) {
-      selectedIds=players.filter(p=>{
-        const r=p.team==='ball'?BALL_R:PLAYER_R;
-        return p.x+r>rx1&&p.x-r<rx2&&p.y+r>ry1&&p.y-r<ry2;
-      }).map(p=>p.id);
-    }
-    selRect=null;
-  }
-  if (hasDragged) autoSave();
-  dragData=null; mouseDownPlayer=null; isMovingGroup=false; render();
-});
-
-canvas.addEventListener('dblclick', e => {
-  const pos=getCanvasPos(e); const p=getPlayerAt(pos.x,pos.y);
-  if (p) openEditModal(p);
-});
-
-canvas.addEventListener('contextmenu', e => {
-  e.preventDefault();
-  const pos=getCanvasPos(e); const p=getPlayerAt(pos.x,pos.y);
-  if (p) showConfirm('削除の確認', `"${p.name||p.num||'選手'}" を削除しますか？`, ()=>{
-    players=players.filter(pl=>pl.id!==p.id);
-    selectedIds=selectedIds.filter(id=>id!==p.id);
-    autoSave(); render();
-  });
-});
-
-// Touch support (basic)
-let touchStartPlayer=null, touchStartPos=null;
-canvas.addEventListener('touchstart', e=>{
-  e.preventDefault();
-  const t=e.touches[0], pos=getCanvasPos(t);
-  mouseDownPos=pos; hasDragged=false;
-  const p=getPlayerAt(pos.x,pos.y);
-  touchStartPlayer=p; touchStartPos=pos;
-  if (p) { if(!selectedIds.includes(p.id)) selectedIds=[p.id]; dragData={lastX:pos.x,lastY:pos.y}; }
-  else { selectedIds=[]; selRect={x1:pos.x,y1:pos.y,x2:pos.x,y2:pos.y}; dragData={lastX:pos.x,lastY:pos.y}; }
-  render();
-},{passive:false});
-canvas.addEventListener('touchmove', e=>{
-  e.preventDefault();
-  if (!dragData) return;
-  const pos=getCanvasPos(e.touches[0]);
-  const dx=pos.x-dragData.lastX, dy=pos.y-dragData.lastY;
-  hasDragged=true;
-  if (touchStartPlayer) { touchStartPlayer.x+=dx; touchStartPlayer.y+=dy; }
-  else if (selRect) { selRect.x2=pos.x; selRect.y2=pos.y; }
-  dragData.lastX=pos.x; dragData.lastY=pos.y; render();
-},{passive:false});
-canvas.addEventListener('touchend', e=>{
-  if (!hasDragged && touchStartPlayer) openEditModal(touchStartPlayer);
-  selRect=null; dragData=null; if(hasDragged) autoSave(); render();
-});
-
-// ==================== Bbox ====================
-function getSelBbox() {
-  if (!selectedIds.length) return null;
-  let x1=Infinity,y1=Infinity,x2=-Infinity,y2=-Infinity;
-  selectedIds.forEach(id=>{
-    const p=players.find(p=>p.id===id); if(!p)return;
-    const r=p.team==='ball'?BALL_R:PLAYER_R;
-    x1=Math.min(x1,p.x-r); y1=Math.min(y1,p.y-r);
-    x2=Math.max(x2,p.x+r); y2=Math.max(y2,p.y+r);
-  });
-  return {x1,y1,x2,y2};
-}
-
-// ==================== Edit Modal ====================
-function openEditModal(p) {
-  editingPlayerId=p.id;
-  const style=teamStyles[p.team]||teamStyles.ball;
-  document.getElementById('edit-team-label').textContent =
-    p.team==='home'?'所属: ⚪ Home Team' : p.team==='away'?'所属: 🔵 Away Team':'所属: ⚽ Ball';
-  document.getElementById('edit-name').value=p.name||'';
-  document.getElementById('edit-name').disabled=p.team==='ball';
-  document.getElementById('edit-num').value=p.num||'';
-  document.getElementById('edit-role').value=p.role||'';
-  document.getElementById('edit-memo').value=p.memo||'';
-  document.getElementById('edit-bg-color').value=toHex(style.bg);
-  document.getElementById('fg-white').checked=style.fg==='white';
-  document.getElementById('fg-black').checked=style.fg!=='white';
-  document.getElementById('edit-modal').classList.add('open');
-}
-function closeEditModal() { document.getElementById('edit-modal').classList.remove('open'); editingPlayerId=null; }
-function saveEditModal() {
-  const p=players.find(pl=>pl.id===editingPlayerId); if(!p)return;
-  if (p.team!=='ball') p.name=document.getElementById('edit-name').value;
-  p.num=document.getElementById('edit-num').value;
-  p.role=document.getElementById('edit-role').value;
-  p.memo=document.getElementById('edit-memo').value;
-  const newBg=document.getElementById('edit-bg-color').value;
-  const newFg=document.querySelector('input[name="fg-color"]:checked').value;
-  teamStyles[p.team].bg=newBg; teamStyles[p.team].fg=newFg;
-  closeEditModal(); autoSave(); render(); showToast('保存しました ✓','success');
-}
-
-// ==================== Confirm ====================
-function showConfirm(title,msg,cb) {
-  document.getElementById('confirm-title').textContent=title;
-  document.getElementById('confirm-message').textContent=msg;
-  confirmCallback=cb; document.getElementById('confirm-modal').classList.add('open');
-}
-function closeConfirm(ok) {
-  document.getElementById('confirm-modal').classList.remove('open');
-  if (ok && confirmCallback) confirmCallback(); confirmCallback=null;
-}
-
-// ==================== Save / Load ====================
-function getBoardData() {
-  return {
-    players: players.map(p=>({...p, color:teamStyles[p.team]?.bg, text_color:teamStyles[p.team]?.fg})),
-    teamStyles, formations: curFormation
-  };
-}
-function saveBoard() {
-  const blob=new Blob([JSON.stringify(getBoardData(),null,2)],{type:'application/json'});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download=`tactics_${new Date().toISOString().slice(0,10)}.json`;
-  a.click(); showToast('💾 保存しました','success');
-}
-function loadBoard() { document.getElementById('file-input').click(); }
-function handleFileLoad(e) {
-  const file=e.target.files[0]; if(!file)return;
-  const reader=new FileReader();
-  reader.onload=ev=>{
-    try {
-      const data=JSON.parse(ev.target.result);
-      const list=Array.isArray(data)?data:data.players||[];
-      if (!Array.isArray(data)) {
-        if (data.teamStyles) teamStyles=data.teamStyles;
-        if (data.formations) { curFormation=data.formations; updateFmtButtons(); }
-      }
-      players=[]; nextId=1;
-      list.forEach(p=>{
-        const team=p.team||'home';
-        if (p.color) { if(!teamStyles[team]) teamStyles[team]={bg:'white',fg:'black'}; teamStyles[team].bg=p.color; if(p.text_color) teamStyles[team].fg=p.text_color; }
-        players.push({id:p.id||`p_${nextId++}`,x:p.x,y:p.y,num:p.num||'',name:p.name||'',team,role:p.role||'',memo:p.memo||''});
+    function changeFormation(team, fmt) {
+      players = players.filter(p => p.team !== team);
+      selectedIds = selectedIds.filter(id => !players.find(p => p.id === id && p.team !== team) !== undefined ? false : true);
+      selectedIds = [];
+      const prefix = team === 'home' ? 'H' : 'A';
+      FORMATIONS[fmt].forEach(([px, py], i) => {
+        const fx = team === 'home' ? px : 850 - px;
+        createPlayer(fx, py, String(i + 1), `${prefix}_${i + 1}`, team);
       });
-      nextId=Math.max(nextId,players.length+10);
-      selectedIds=[]; autoSave(); render(); showToast('📂 読込完了','success');
-    } catch(err) { showToast('読込失敗: '+err.message,'error'); }
-  };
-  reader.readAsText(file); e.target.value='';
-}
-function newBoard() {
-  showConfirm('新規作成','現在のボードをリセットして新規作成しますか？', ()=>{
-    players=[]; selectedIds=[];
-    teamStyles={home:{bg:'#f8fafc',fg:'black'},away:{bg:'#1a6eb5',fg:'white'},ball:{bg:'white',fg:'black'}};
-    changeFormation('home','4-3-3'); changeFormation('away','4-3-3');
-    createPlayer(425,250,'','BALL','ball'); autoSave(); render();
-  });
-}
+      curFormation[team] = fmt;
+      updateFmtButtons();
+      autoSave(); render();
+    }
 
-// ==================== Auto Save ====================
-function autoSave() {
-  try { localStorage.setItem('stb_save', JSON.stringify(getBoardData())); } catch(e){}
-}
-function loadAutoSave() {
-  try {
-    const raw=localStorage.getItem('stb_save'); if(!raw) return false;
-    const data=JSON.parse(raw);
-    if (data.teamStyles) teamStyles=data.teamStyles;
-    if (data.formations) { curFormation=data.formations; }
-    players=(data.players||[]).map(p=>({...p, id:p.id||`p_${nextId++}`}));
-    nextId=Math.max(nextId,players.length+10); return true;
-  } catch(e) { return false; }
-}
+    function addSubstitutes(team) {
+      const prefix = team === 'home' ? 'H' : 'A';
+      const startX = team === 'home' ? 40 : 470;
+      for (let i = 0; i < 11; i++) {
+        const px = i < 6 ? startX + i * 65 : startX + 32 + (i - 6) * 65;
+        const py = i < 6 ? 538 : 598;
+        createPlayer(px, py, String(12 + i), `${prefix}_${12 + i}`, team);
+      }
+      autoSave(); render();
+    }
 
-// ==================== Formation Buttons ====================
-function updateFmtButtons() {
-  ['home','away'].forEach(team=>{
-    const fmts=['4-3-3','4-4-2','3-5-2','4-2-3-1','5-3-2','3-4-2-1'];
-    fmts.forEach(f=>{
-      const btn=document.getElementById(`${team}-${f.replace(/-/g,'')}`);
-      if (btn) btn.classList.toggle('active-fmt', curFormation[team]===f);
+    // ==================== Drawing ====================
+    function drawPitch() {
+      // Grass
+      ctx.fillStyle = '#2e8b57'; ctx.fillRect(0, 0, W, 480);
+      // Stripes
+      for (let i = 0; i < 9; i++) {
+        if (i % 2 === 0) { ctx.fillStyle = 'rgba(0,0,0,0.04)'; ctx.fillRect(25 + i * 89, 25, 89, 450); }
+      }
+      // Lines
+      ctx.strokeStyle = 'rgba(255,255,255,0.88)'; ctx.lineWidth = 2;
+      ctx.strokeRect(25, 25, 800, 450);
+      ctx.beginPath(); ctx.moveTo(425, 25); ctx.lineTo(425, 475); ctx.stroke();
+      ctx.beginPath(); ctx.arc(425, 250, 60, 0, Math.PI * 2); ctx.stroke();
+      // Center dot
+      ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(425, 250, 4, 0, Math.PI * 2); ctx.fill();
+      // Left penalty + goal
+      ctx.strokeRect(25, 125, 120, 250); ctx.strokeRect(25, 175, 50, 150);
+      ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.strokeRect(0, 207, 22, 86);
+      // Right penalty + goal
+      ctx.strokeStyle = 'rgba(255,255,255,0.88)';
+      ctx.strokeRect(705, 125, 120, 250); ctx.strokeRect(775, 175, 50, 150);
+      ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.strokeRect(828, 207, 22, 86);
+      // Penalty spots
+      ctx.strokeStyle = 'rgba(255,255,255,0.88)';
+      ctx.fillStyle = 'white';
+      [[105, 250], [745, 250]].forEach(([x, y]) => { ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill(); });
+      // Corner arcs
+      ctx.lineWidth = 1.5;
+      [[25, 25, 0, Math.PI / 2], [825, 25, Math.PI / 2, Math.PI], [25, 475, -Math.PI / 2, 0], [825, 475, Math.PI, 3 * Math.PI / 2]].forEach(([x, y, s, e]) => {
+        ctx.beginPath(); ctx.arc(x, y, 9, s, e); ctx.stroke();
+      });
+      // Footer
+      ctx.fillStyle = '#1e5c3a'; ctx.fillRect(0, 480, W, 170);
+      ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(0, 480); ctx.lineTo(W, 480); ctx.stroke();
+      ctx.fillStyle = 'rgba(180,220,180,0.45)'; ctx.font = 'bold 10px Inter,Arial'; ctx.textAlign = 'center';
+      ctx.fillText('⚽  TACTICAL BOARD  |  AUTO-SAVED  ⚽', 425, 500);
+    }
+
+    function drawPlayer(p) {
+      const style = teamStyles[p.team] || teamStyles.ball;
+      const r = p.team === 'ball' ? BALL_R : PLAYER_R;
+      const sel = selectedIds.includes(p.id);
+      ctx.save();
+      if (sel) { ctx.shadowColor = '#facc15'; ctx.shadowBlur = 14; }
+      // Drop shadow
+      if (p.team !== 'ball') {
+        ctx.fillStyle = 'rgba(0,0,0,0.25)';
+        ctx.beginPath(); ctx.ellipse(p.x + 1, p.y + 3, r * 0.85, r * 0.4, 0, 0, Math.PI * 2); ctx.fill();
+      }
+      // Circle background
+      ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+      if (p.team === 'ball') {
+        const grd = ctx.createRadialGradient(p.x - 3, p.y - 3, 1, p.x, p.y, r);
+        grd.addColorStop(0, '#fff'); grd.addColorStop(1, '#ccc');
+        ctx.fillStyle = grd;
+      } else {
+        ctx.fillStyle = style.bg;
+      }
+      ctx.fill();
+      // Border
+      ctx.strokeStyle = sel ? '#facc15' : 'rgba(0,0,0,0.45)';
+      ctx.lineWidth = sel ? 3 : 1.5; ctx.stroke();
+      ctx.shadowBlur = 0;
+      // Texts
+      if (p.team !== 'ball') {
+        ctx.fillStyle = style.fg;
+        ctx.font = 'bold 10px Inter,Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(p.num, p.x, p.y);
+        ctx.font = 'bold 8.5px Inter,Arial'; ctx.textBaseline = 'alphabetic';
+        ctx.fillText(p.name, p.x, p.y + 28);
+        if (p.role) { ctx.font = 'italic 8px Inter,Arial'; ctx.fillStyle = style.fg + 'bb'; ctx.fillText(p.role, p.x, p.y + 40); }
+      } else {
+        // Simple ball design
+        ctx.fillStyle = '#222'; ctx.font = 'bold 11px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('●', p.x, p.y);
+      }
+      ctx.restore();
+    }
+
+    function drawSelRect() {
+      if (!selRect) return;
+      const { x1, y1, x2, y2 } = selRect;
+      ctx.save(); ctx.strokeStyle = '#facc15'; ctx.lineWidth = 1.5; ctx.setLineDash([5, 4]);
+      ctx.strokeRect(Math.min(x1, x2), Math.min(y1, y2), Math.abs(x2 - x1), Math.abs(y2 - y1));
+      ctx.fillStyle = 'rgba(250,204,21,0.04)';
+      ctx.fillRect(Math.min(x1, x2), Math.min(y1, y2), Math.abs(x2 - x1), Math.abs(y2 - y1));
+      ctx.setLineDash([]); ctx.restore();
+    }
+
+    function render() {
+      ctx.clearRect(0, 0, W, H);
+      drawPitch();
+      players.forEach(drawPlayer);
+      drawSelRect();
+    }
+
+    // ==================== Hit Test ====================
+    function getPlayerAt(cx, cy) {
+      for (let i = players.length - 1; i >= 0; i--) {
+        const p = players[i], r = p.team === 'ball' ? BALL_R : PLAYER_R;
+        if ((cx - p.x) ** 2 + (cy - p.y) ** 2 <= (r + 5) ** 2) return p;
+      }
+      return null;
+    }
+
+    function getCanvasPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      return { x: (e.clientX - rect.left) * (W / rect.width), y: (e.clientY - rect.top) * (H / rect.height) };
+    }
+
+    // ==================== Mouse Events ====================
+    canvas.addEventListener('mousedown', e => {
+      if (e.button !== 0) return;
+      const pos = getCanvasPos(e);
+      mouseDownPos = pos; hasDragged = false;
+      const p = getPlayerAt(pos.x, pos.y);
+      if (p) {
+        mouseDownPlayer = p;
+        if (e.shiftKey) {
+          selectedIds.includes(p.id) ? (selectedIds = selectedIds.filter(i => i !== p.id)) : selectedIds.push(p.id);
+        } else {
+          if (!selectedIds.includes(p.id)) selectedIds = [p.id];
+        }
+        isMovingGroup = selectedIds.length > 1 && selectedIds.includes(p.id);
+        dragData = { lastX: pos.x, lastY: pos.y };
+        render();
+      } else {
+        mouseDownPlayer = null;
+        const bbox = getSelBbox();
+        if (bbox && pos.x >= bbox.x1 && pos.x <= bbox.x2 && pos.y >= bbox.y1 && pos.y <= bbox.y2 && selectedIds.length > 0) {
+          isMovingGroup = true; dragData = { lastX: pos.x, lastY: pos.y };
+        } else {
+          isMovingGroup = false; selectedIds = [];
+          selRect = { x1: pos.x, y1: pos.y, x2: pos.x, y2: pos.y };
+          dragData = { lastX: pos.x, lastY: pos.y }; render();
+        }
+      }
     });
-  });
-}
 
-// ==================== Utility ====================
-function toHex(color) {
-  if (!color) return '#ffffff';
-  if (color.startsWith('#')) return color;
-  const c=document.createElement('canvas').getContext('2d');
-  c.fillStyle=color; return c.fillStyle;
-}
-let toastTimer=null;
-function showToast(msg,type='info') {
-  document.querySelector('.toast')?.remove();
-  const t=document.createElement('div'); t.className=`toast ${type}`; t.textContent=msg;
-  document.body.appendChild(t);
-  if (toastTimer) clearTimeout(toastTimer);
-  toastTimer=setTimeout(()=>t.remove(),2500);
-}
+    canvas.addEventListener('mousemove', e => {
+      if (!dragData) return;
+      const pos = getCanvasPos(e);
+      const dx = pos.x - dragData.lastX, dy = pos.y - dragData.lastY;
+      if (Math.abs(pos.x - mouseDownPos.x) > 4 || Math.abs(pos.y - mouseDownPos.y) > 4) hasDragged = true;
+      if (!hasDragged) return;
+      if (mouseDownPlayer && !e.shiftKey) {
+        const ids = (isMovingGroup && selectedIds.length > 1) ? selectedIds : [mouseDownPlayer.id];
+        ids.forEach(id => { const p = players.find(p => p.id === id); if (p) { p.x += dx; p.y += dy; } });
+      } else if (isMovingGroup && !mouseDownPlayer) {
+        selectedIds.forEach(id => { const p = players.find(p => p.id === id); if (p) { p.x += dx; p.y += dy; } });
+      } else if (selRect) {
+        selRect.x2 = pos.x; selRect.y2 = pos.y;
+      }
+      dragData.lastX = pos.x; dragData.lastY = pos.y; render();
+    });
 
-// ==================== Init ====================
-function init() {
-  const ok=loadAutoSave();
-  if (!ok||players.length===0) {
-    changeFormation('home','4-3-3');
-    changeFormation('away','4-3-3');
-    createPlayer(425,250,'','BALL','ball');
-  }
-  updateFmtButtons(); render();
-}
-init();
-</script>
+    canvas.addEventListener('mouseup', e => {
+      if (e.button !== 0) return;
+      if (selRect) {
+        const rx1 = Math.min(selRect.x1, selRect.x2), ry1 = Math.min(selRect.y1, selRect.y2);
+        const rx2 = Math.max(selRect.x1, selRect.x2), ry2 = Math.max(selRect.y1, selRect.y2);
+        if (rx2 - rx1 > 5 || ry2 - ry1 > 5) {
+          selectedIds = players.filter(p => {
+            const r = p.team === 'ball' ? BALL_R : PLAYER_R;
+            return p.x + r > rx1 && p.x - r < rx2 && p.y + r > ry1 && p.y - r < ry2;
+          }).map(p => p.id);
+        }
+        selRect = null;
+      }
+      if (hasDragged) autoSave();
+      dragData = null; mouseDownPlayer = null; isMovingGroup = false; render();
+    });
+
+    canvas.addEventListener('dblclick', e => {
+      const pos = getCanvasPos(e); const p = getPlayerAt(pos.x, pos.y);
+      if (p) openEditModal(p);
+    });
+
+    canvas.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      const pos = getCanvasPos(e); const p = getPlayerAt(pos.x, pos.y);
+      if (p) showConfirm('削除の確認', `"${p.name || p.num || '選手'}" を削除しますか？`, () => {
+        players = players.filter(pl => pl.id !== p.id);
+        selectedIds = selectedIds.filter(id => id !== p.id);
+        autoSave(); render();
+      });
+    });
+
+    // Touch support (basic)
+    let touchStartPlayer = null, touchStartPos = null;
+    canvas.addEventListener('touchstart', e => {
+      e.preventDefault();
+      const t = e.touches[0], pos = getCanvasPos(t);
+      mouseDownPos = pos; hasDragged = false;
+      const p = getPlayerAt(pos.x, pos.y);
+      touchStartPlayer = p; touchStartPos = pos;
+      if (p) { if (!selectedIds.includes(p.id)) selectedIds = [p.id]; dragData = { lastX: pos.x, lastY: pos.y }; }
+      else { selectedIds = []; selRect = { x1: pos.x, y1: pos.y, x2: pos.x, y2: pos.y }; dragData = { lastX: pos.x, lastY: pos.y }; }
+      render();
+    }, { passive: false });
+    canvas.addEventListener('touchmove', e => {
+      e.preventDefault();
+      if (!dragData) return;
+      const pos = getCanvasPos(e.touches[0]);
+      const dx = pos.x - dragData.lastX, dy = pos.y - dragData.lastY;
+      hasDragged = true;
+      if (touchStartPlayer) { touchStartPlayer.x += dx; touchStartPlayer.y += dy; }
+      else if (selRect) { selRect.x2 = pos.x; selRect.y2 = pos.y; }
+      dragData.lastX = pos.x; dragData.lastY = pos.y; render();
+    }, { passive: false });
+    canvas.addEventListener('touchend', e => {
+      if (!hasDragged && touchStartPlayer) openEditModal(touchStartPlayer);
+      selRect = null; dragData = null; if (hasDragged) autoSave(); render();
+    });
+
+    // ==================== Bbox ====================
+    function getSelBbox() {
+      if (!selectedIds.length) return null;
+      let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
+      selectedIds.forEach(id => {
+        const p = players.find(p => p.id === id); if (!p) return;
+        const r = p.team === 'ball' ? BALL_R : PLAYER_R;
+        x1 = Math.min(x1, p.x - r); y1 = Math.min(y1, p.y - r);
+        x2 = Math.max(x2, p.x + r); y2 = Math.max(y2, p.y + r);
+      });
+      return { x1, y1, x2, y2 };
+    }
+
+    // ==================== Edit Modal ====================
+    function openEditModal(p) {
+      editingPlayerId = p.id;
+      const style = teamStyles[p.team] || teamStyles.ball;
+      document.getElementById('edit-team-label').textContent =
+        p.team === 'home' ? '所属: ⚪ Home Team' : p.team === 'away' ? '所属: 🔵 Away Team' : '所属: ⚽ Ball';
+      document.getElementById('edit-name').value = p.name || '';
+      document.getElementById('edit-name').disabled = p.team === 'ball';
+      document.getElementById('edit-num').value = p.num || '';
+      document.getElementById('edit-role').value = p.role || '';
+      document.getElementById('edit-memo').value = p.memo || '';
+      document.getElementById('edit-bg-color').value = toHex(style.bg);
+      document.getElementById('fg-white').checked = style.fg === 'white';
+      document.getElementById('fg-black').checked = style.fg !== 'white';
+      document.getElementById('edit-modal').classList.add('open');
+    }
+    function closeEditModal() { document.getElementById('edit-modal').classList.remove('open'); editingPlayerId = null; }
+    function saveEditModal() {
+      const p = players.find(pl => pl.id === editingPlayerId); if (!p) return;
+      if (p.team !== 'ball') p.name = document.getElementById('edit-name').value;
+      p.num = document.getElementById('edit-num').value;
+      p.role = document.getElementById('edit-role').value;
+      p.memo = document.getElementById('edit-memo').value;
+      const newBg = document.getElementById('edit-bg-color').value;
+      const newFg = document.querySelector('input[name="fg-color"]:checked').value;
+      teamStyles[p.team].bg = newBg; teamStyles[p.team].fg = newFg;
+      closeEditModal(); autoSave(); render(); showToast('保存しました ✓', 'success');
+    }
+
+    // ==================== Confirm ====================
+    function showConfirm(title, msg, cb) {
+      document.getElementById('confirm-title').textContent = title;
+      document.getElementById('confirm-message').textContent = msg;
+      confirmCallback = cb; document.getElementById('confirm-modal').classList.add('open');
+    }
+    function closeConfirm(ok) {
+      document.getElementById('confirm-modal').classList.remove('open');
+      if (ok && confirmCallback) confirmCallback(); confirmCallback = null;
+    }
+
+    // ==================== Save / Load ====================
+    function getBoardData() {
+      return {
+        players: players.map(p => ({ ...p, color: teamStyles[p.team]?.bg, text_color: teamStyles[p.team]?.fg })),
+        teamStyles, formations: curFormation
+      };
+    }
+    function saveBoard() {
+      const blob = new Blob([JSON.stringify(getBoardData(), null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `tactics_${new Date().toISOString().slice(0, 10)}.json`;
+      a.click(); showToast('💾 保存しました', 'success');
+    }
+    function loadBoard() { document.getElementById('file-input').click(); }
+    function handleFileLoad(e) {
+      const file = e.target.files[0]; if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        try {
+          const data = JSON.parse(ev.target.result);
+          const list = Array.isArray(data) ? data : data.players || [];
+          if (!Array.isArray(data)) {
+            if (data.teamStyles) teamStyles = data.teamStyles;
+            if (data.formations) { curFormation = data.formations; updateFmtButtons(); }
+          }
+          players = []; nextId = 1;
+          list.forEach(p => {
+            const team = p.team || 'home';
+            if (p.color) { if (!teamStyles[team]) teamStyles[team] = { bg: 'white', fg: 'black' }; teamStyles[team].bg = p.color; if (p.text_color) teamStyles[team].fg = p.text_color; }
+            players.push({ id: p.id || `p_${nextId++}`, x: p.x, y: p.y, num: p.num || '', name: p.name || '', team, role: p.role || '', memo: p.memo || '' });
+          });
+          nextId = Math.max(nextId, players.length + 10);
+          selectedIds = []; autoSave(); render(); showToast('📂 読込完了', 'success');
+        } catch (err) { showToast('読込失敗: ' + err.message, 'error'); }
+      };
+      reader.readAsText(file); e.target.value = '';
+    }
+    function newBoard() {
+      showConfirm('新規作成', '現在のボードをリセットして新規作成しますか？', () => {
+        players = []; selectedIds = [];
+        teamStyles = { home: { bg: '#f8fafc', fg: 'black' }, away: { bg: '#1a6eb5', fg: 'white' }, ball: { bg: 'white', fg: 'black' } };
+        changeFormation('home', '4-3-3'); changeFormation('away', '4-3-3');
+        createPlayer(425, 250, '', 'BALL', 'ball'); autoSave(); render();
+      });
+    }
+
+    // ==================== Auto Save ====================
+    function autoSave() {
+      try { localStorage.setItem('stb_save', JSON.stringify(getBoardData())); } catch (e) { }
+    }
+    function loadAutoSave() {
+      try {
+        const raw = localStorage.getItem('stb_save'); if (!raw) return false;
+        const data = JSON.parse(raw);
+        if (data.teamStyles) teamStyles = data.teamStyles;
+        if (data.formations) { curFormation = data.formations; }
+        players = (data.players || []).map(p => ({ ...p, id: p.id || `p_${nextId++}` }));
+        nextId = Math.max(nextId, players.length + 10); return true;
+      } catch (e) { return false; }
+    }
+
+    // ==================== Formation Buttons ====================
+    function updateFmtButtons() {
+      ['home', 'away'].forEach(team => {
+        const fmts = ['4-3-3', '4-4-2', '3-5-2', '4-2-3-1', '5-3-2', '3-4-2-1'];
+        fmts.forEach(f => {
+          const btn = document.getElementById(`${team}-${f.replace(/-/g, '')}`);
+          if (btn) btn.classList.toggle('active-fmt', curFormation[team] === f);
+        });
+      });
+    }
+
+    // ==================== Utility ====================
+    function toHex(color) {
+      if (!color) return '#ffffff';
+      if (color.startsWith('#')) return color;
+      const c = document.createElement('canvas').getContext('2d');
+      c.fillStyle = color; return c.fillStyle;
+    }
+    let toastTimer = null;
+    function showToast(msg, type = 'info') {
+      document.querySelector('.toast')?.remove();
+      const t = document.createElement('div'); t.className = `toast ${type}`; t.textContent = msg;
+      document.body.appendChild(t);
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => t.remove(), 2500);
+    }
+
+    // ==================== Init ====================
+    function init() {
+      const ok = loadAutoSave();
+      if (!ok || players.length === 0) {
+        changeFormation('home', '4-3-3');
+        changeFormation('away', '4-3-3');
+        createPlayer(425, 250, '', 'BALL', 'ball');
+      }
+      updateFmtButtons(); render();
+    }
+    init();
+  </script>
 </body>
+
 </html>
