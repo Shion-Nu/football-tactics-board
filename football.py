@@ -25,7 +25,8 @@ class TacticalBoard:
         self.root.title("Football Tactics Board - Professional Formations")
         self.root.resizable(False, False)
         
-        self.current_file_path = None # 現在開いているファイルのパスを保持
+        self.cu
+        rrent_file_path = None # 現在開いているファイルのパスを保持
         self.player_id_counter = 0 # 選手ID生成用カウンター
 
         # --- メインメニュー ---
@@ -165,7 +166,7 @@ class TacticalBoard:
         for item in self.canvas.find_withtag("icon"):
             tags = self.canvas.gettags(item)
             p_tag = next((t for t in tags if t.startswith("p_")), None)
-            team_tag = "home" if "home" in tags else ("away" if "away" in tags else "ball")
+            team_tag = "home" if "home" in tags else ("away" if "away" in tags else "")
             x1, y1, x2, y2 = self.canvas.coords(item)
             num, name, role, memo = "", "", "", ""
             for t_item in self.canvas.find_withtag(p_tag):
@@ -464,12 +465,29 @@ class TacticalBoard:
                 self.canvas.itemconfig(item, outline="black", width=1)
 
 if __name__ == "__main__":
-    # Windowsで高解像度ディスプレイを使用している場合に、文字のぼやけを防ぐ設定
-    try:
-        from ctypes import windll
-        windll.shcore.SetProcessDpiAwareness(1)
-    except Exception:
-        pass
+    # 高解像度ディスプレイ（High DPI / Retina）におけるぼやけ防止設定
+    import sys
+    if sys.platform.startswith("win"):
+        try:
+            import ctypes
+            # Windows 10 (1703) 以降向けの推奨設定: Per Monitor Aware V2
+            ctypes.windll.shcore.SetProcessDpiAwareness(2)
+        except Exception:
+            try:
+                # Windows 8.1 / 10 (初期) 向け: System DPI Aware
+                ctypes.windll.shcore.SetProcessDpiAwareness(1)
+            except Exception:
+                try:
+                    # 古いWindows向け
+                    ctypes.windll.user32.SetProcessDPIAware()
+                except Exception:
+                    pass
+
     root = tk.Tk()
+    
+    # macOSやその他の環境で、もし文字が小さすぎる場合は
+    # 以下のようにスケーリング係数を手動で調整することも可能です
+    # root.tk.call('tk', 'scaling', 2.0)
+
     app = TacticalBoard(root)
     root.mainloop()
