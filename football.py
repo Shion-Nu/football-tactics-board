@@ -24,9 +24,8 @@ class TacticalBoard:
         self.root = root
         self.root.title("Football Tactics Board - Professional Formations")
         self.root.resizable(False, False)
-        
-        self.cu
-        rrent_file_path = None # 現在開いているファイルのパスを保持
+
+        self.current_file_path = None # 現在開いているファイルのパスを保持
         self.player_id_counter = 0 # 選手ID生成用カウンター
 
         # --- メインメニュー ---
