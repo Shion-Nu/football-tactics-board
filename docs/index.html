@@ -21,13 +21,13 @@
 
     :root {
       --bg: #0a0f1a;
-      --surface: #111827;
-      --surface2: #1a2332;
-      --border: rgba(255, 255, 255, 0.08);
+      --surface: #0f172a;
+      --surface2: #1e293b;
+      --border: rgba(255, 255, 255, 0.1);
       --text: #e2e8f0;
       --text-muted: #64748b;
-      --accent: #10b981;
-      --pitch: #2e8b57;
+      --accent: #34d399;
+      --pitch: #166534;
     }
 
     html,
@@ -108,6 +108,7 @@
       padding: 8px 14px;
       background: var(--surface);
       border-bottom: 1px solid var(--border);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
       flex-wrap: wrap;
     }
 
@@ -215,7 +216,7 @@
 
     .canvas-container {
       position: relative;
-      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1);
       border-radius: 8px;
       overflow: hidden;
     }
@@ -570,6 +571,8 @@
     let mouseDownPos = null;
     let mouseDownPlayer = null;
 
+    let dpr = window.devicePixelRatio || 1;
+
     // ==================== Formations (original coords) ====================
     const FORMATIONS = {
       '4-3-3': [[60, 250], [150, 100], [150, 200], [150, 300], [150, 400], [240, 150], [240, 250], [240, 350], [350, 100], [350, 250], [350, 400]],
@@ -612,10 +615,22 @@
       autoSave(); render();
     }
 
+    // ==================== Resolution Setup ====================
+    function setupCanvas() {
+      dpr = window.devicePixelRatio || 1;
+      canvas.width = W * dpr;
+      canvas.height = H * dpr;
+      canvas.style.width = W + 'px';
+      canvas.style.height = H + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
     // ==================== Drawing ====================
     function drawPitch() {
       // Grass
-      ctx.fillStyle = '#2e8b57'; ctx.fillRect(0, 0, W, 480);
+      const grassGrd = ctx.createLinearGradient(0, 0, 0, 480);
+      grassGrd.addColorStop(0, '#2d6a4f'); grassGrd.addColorStop(1, '#1b4332');
+      ctx.fillStyle = grassGrd; ctx.fillRect(0, 0, W, 480);
       // Stripes
       for (let i = 0; i < 9; i++) {
         if (i % 2 === 0) { ctx.fillStyle = 'rgba(0,0,0,0.04)'; ctx.fillRect(25 + i * 89, 25, 89, 450); }
@@ -652,8 +667,9 @@
     }
 
     function drawPlayer(p) {
+      ctx.imageSmoothingEnabled = true;
       const style = teamStyles[p.team] || teamStyles.ball;
-      const r = p.team === 'ball' ? BALL_R : PLAYER_R;
+      const r = (p.team === 'ball' ? BALL_R : PLAYER_R);
       const sel = selectedIds.includes(p.id);
       ctx.save();
       if (sel) { ctx.shadowColor = '#facc15'; ctx.shadowBlur = 14; }
@@ -677,9 +693,10 @@
       ctx.lineWidth = sel ? 3 : 1.5; ctx.stroke();
       ctx.shadowBlur = 0;
       // Texts
+      ctx.font = `bold ${p.team === 'ball' ? 10 : 11}px 'Inter', sans-serif`;
       if (p.team !== 'ball') {
         ctx.fillStyle = style.fg;
-        ctx.font = 'bold 10px Inter,Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText(p.num, p.x, p.y);
         ctx.font = 'bold 8.5px Inter,Arial'; ctx.textBaseline = 'alphabetic';
         ctx.fillText(p.name, p.x, p.y + 28);
@@ -703,6 +720,7 @@
     }
 
     function render() {
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, W, H);
       drawPitch();
       players.forEach(drawPlayer);
@@ -992,6 +1010,7 @@
 
     // ==================== Init ====================
     function init() {
+      setupCanvas();
       const ok = loadAutoSave();
       if (!ok || players.length === 0) {
         changeFormation('home', '4-3-3');
