@@ -489,6 +489,7 @@
     <button class="btn util-btn" onclick="newBoard()" id="btn-new">✨ 新規</button>
     <button class="btn util-btn" onclick="saveBoard()" id="btn-save">💾 保存</button>
     <button class="btn util-btn" onclick="loadBoard()" id="btn-load">📂 読込</button>
+    <button class="btn util-btn" onclick="clearTrajectories()" id="btn-clear-lines">✂️ 軌跡消去</button>
   </div>
 
   <div class="canvas-wrapper">
@@ -524,6 +525,14 @@
           <label><input type="radio" name="fg-color" id="fg-black" value="black" checked> 黒</label>
         </div>
       </div>
+      <div class="fg"
+        style="margin-top:20px; border-top:1px solid var(--border); padding-top:15px; display:flex; flex-direction:column; gap:8px;">
+        <label>アクション</label>
+        <button class="btn util-btn" style="width:100%; justify-content:center; display:flex; gap:5px;"
+          onclick="undoPlayerTrajectory()"><span>⬅️</span> 直近の軌跡を1つ消す</button>
+        <button class="btn util-btn" style="width:100%; justify-content:center; display:flex; gap:5px;"
+          onclick="clearPlayerTrajectories()"><span>✂️</span> この選手の軌跡を消去</button>
+      </div>
       <div class="modal-actions">
         <button class="btn-cancel" onclick="closeEditModal()">キャンセル</button>
         <button class="btn-primary" onclick="saveEditModal()">保存して閉じる</button>
@@ -558,6 +567,7 @@
       away: { bg: '#1a6eb5', fg: 'white' },
       ball: { bg: 'white', fg: 'black' }
     };
+    let trajectories = [];
     let selectedIds = [];
     let dragData = null;
     let isMovingGroup = false;
@@ -567,6 +577,9 @@
     let confirmCallback = null;
     let currentFileHandle = null;
     let curFormation = { home: '4-3-3', away: '4-3-3' };
+    let history = [];
+    const MAX_HISTORY = 50;
+    let dragStartSnapshot = null;
     let hasDragged = false;
     let mouseDownPos = null;
     let mouseDownPlayer = null;
@@ -591,6 +604,7 @@
     }
 
     function changeFormation(team, fmt) {
+      recordAction();
       players = players.filter(p => p.team !== team);
       selectedIds = selectedIds.filter(id => players.some(p => p.id === id));
       const prefix = team === 'home' ? 'H' : 'A';
@@ -604,6 +618,7 @@
     }
 
     function addSubstitutes(team) {
+      recordAction();
       const prefix = team === 'home' ? 'H' : 'A';
       const startX = team === 'home' ? 40 : 470;
       for (let i = 0; i < 11; i++) {
@@ -665,9 +680,49 @@
       ctx.fillText('⚽  TACTICAL BOARD  |  AUTO-SAVED  ⚽', 425, 500);
     }
 
+    function drawArrow(x1, y1, x2, y2, color) {
+      const headlen = 10;
+      const angle = Math.atan2(y2 - y1, x2 - x1);
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      // Line
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+      // Arrow head
+      ctx.beginPath();
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+      ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+      ctx.closePath();
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.restore();
+    }
+
     function drawPlayer(p) {
       ctx.imageSmoothingEnabled = true;
       const style = teamStyles[p.team] || teamStyles.ball;
+
+      // ドラッグ中の軌跡（ライン）の描画
+      if (dragData && (selectedIds.includes(p.id) || (mouseDownPlayer && mouseDownPlayer.id === p.id)) && hasDragged) {
+        const startPos = dragData.initialPositions ? dragData.initialPositions[p.id] : null;
+        if (startPos) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.setLineDash([5, 5]);
+          ctx.strokeStyle = p.team === 'home' ? 'rgba(255,255,255,0.6)' : 'rgba(96,165,250,0.6)';
+          ctx.lineWidth = 2;
+          ctx.moveTo(startPos.x, startPos.y);
+          ctx.lineTo(p.x, p.y);
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+
       const r = (p.team === 'ball' ? BALL_R : PLAYER_R);
       const sel = selectedIds.includes(p.id);
       ctx.save();
@@ -728,6 +783,11 @@
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, W, H);
       drawPitch();
+      // Draw existing trajectories
+      trajectories.forEach(t => {
+        const color = t.team === 'home' ? 'rgba(255,255,255,0.4)' : t.team === 'away' ? 'rgba(96,165,250,0.5)' : 'rgba(255,255,255,0.3)';
+        drawArrow(t.x1, t.y1, t.x2, t.y2, color);
+      });
       players.forEach(drawPlayer);
       drawSelRect();
     }
@@ -749,6 +809,7 @@
     // ==================== Mouse Events ====================
     canvas.addEventListener('mousedown', e => {
       if (e.button !== 0) return;
+      dragStartSnapshot = JSON.stringify({ players, trajectories, teamStyles, curFormation, nextId });
       const pos = getCanvasPos(e);
       mouseDownPos = pos; hasDragged = false;
       const p = getPlayerAt(pos.x, pos.y);
@@ -760,13 +821,26 @@
           if (!selectedIds.includes(p.id)) selectedIds = [p.id];
         }
         isMovingGroup = selectedIds.length > 1 && selectedIds.includes(p.id);
-        dragData = { lastX: pos.x, lastY: pos.y };
+
+        // 初期位置を保存
+        const initialPositions = {};
+        selectedIds.forEach(id => {
+          const pl = players.find(ptr => ptr.id === id);
+          if (pl) initialPositions[id] = { x: pl.x, y: pl.y };
+        });
+        dragData = { lastX: pos.x, lastY: pos.y, initialPositions };
         render();
       } else {
         mouseDownPlayer = null;
         const bbox = getSelBbox();
         if (bbox && pos.x >= bbox.x1 && pos.x <= bbox.x2 && pos.y >= bbox.y1 && pos.y <= bbox.y2 && selectedIds.length > 0) {
-          isMovingGroup = true; dragData = { lastX: pos.x, lastY: pos.y };
+          isMovingGroup = true;
+          const initialPositions = {};
+          selectedIds.forEach(id => {
+            const pl = players.find(ptr => ptr.id === id);
+            if (pl) initialPositions[id] = { x: pl.x, y: pl.y };
+          });
+          dragData = { lastX: pos.x, lastY: pos.y, initialPositions };
         } else {
           isMovingGroup = false; selectedIds = [];
           selRect = { x1: pos.x, y1: pos.y, x2: pos.x, y2: pos.y };
@@ -794,6 +868,23 @@
 
     canvas.addEventListener('mouseup', e => {
       if (e.button !== 0) return;
+      if (hasDragged && dragStartSnapshot) {
+        if (history.length >= MAX_HISTORY) history.shift();
+        history.push(dragStartSnapshot);
+        dragStartSnapshot = null;
+      }
+      if (hasDragged && dragData && dragData.initialPositions) {
+        // 移動した各選手の軌跡を保存
+        const ids = isMovingGroup ? selectedIds : (mouseDownPlayer ? [mouseDownPlayer.id] : []);
+        ids.forEach(id => {
+          const p = players.find(ptr => ptr.id === id);
+          const startPos = dragData.initialPositions[id];
+          if (p && startPos) {
+            const dist = Math.sqrt((p.x - startPos.x) ** 2 + (p.y - startPos.y) ** 2);
+            if (dist > 15) trajectories.push({ x1: startPos.x, y1: startPos.y, x2: p.x, y2: p.y, team: p.team, playerId: id });
+          }
+        });
+      }
       if (selRect) {
         const rx1 = Math.min(selRect.x1, selRect.x2), ry1 = Math.min(selRect.y1, selRect.y2);
         const rx2 = Math.max(selRect.x1, selRect.x2), ry2 = Math.max(selRect.y1, selRect.y2);
@@ -817,9 +908,11 @@
     canvas.addEventListener('contextmenu', e => {
       e.preventDefault();
       const pos = getCanvasPos(e); const p = getPlayerAt(pos.x, pos.y);
+      if (p) recordAction();
       if (p) showConfirm('削除の確認', `"${p.name || p.num || '選手'}" を削除しますか？`, () => {
         players = players.filter(pl => pl.id !== p.id);
         selectedIds = selectedIds.filter(id => id !== p.id);
+        trajectories = trajectories.filter(t => t.playerId !== p.id);
         autoSave(); render();
       });
     });
@@ -904,11 +997,69 @@
       if (ok && confirmCallback) confirmCallback(); confirmCallback = null;
     }
 
+    function clearTrajectories() {
+      recordAction();
+      trajectories = []; autoSave(); render(); showToast('軌跡を消去しました', 'info');
+    }
+
+    function clearPlayerTrajectories() {
+      if (!editingPlayerId) return;
+      recordAction();
+      trajectories = trajectories.filter(t => t.playerId !== editingPlayerId);
+      autoSave(); render(); showToast('選手の軌跡を消去しました', 'info');
+    }
+
+    function undoPlayerTrajectory() {
+      if (!editingPlayerId) return;
+      recordAction();
+      for (let i = trajectories.length - 1; i >= 0; i--) {
+        if (trajectories[i].playerId === editingPlayerId) {
+          trajectories.splice(i, 1);
+          autoSave(); render();
+          showToast('直近の軌跡を削除しました', 'info');
+          return;
+        }
+      }
+      showToast('削除できる軌跡がありません', 'info');
+    }
+
+    // ==================== Global Undo (Ctrl+Z) ====================
+    function recordAction() {
+      const snapshot = JSON.stringify({ players, trajectories, teamStyles, curFormation, nextId });
+      if (history.length >= MAX_HISTORY) history.shift();
+      history.push(snapshot);
+    }
+
+    function undo() {
+      if (history.length === 0) {
+        showToast('戻れる操作がありません', 'info');
+        return;
+      }
+      const data = JSON.parse(history.pop());
+      players = data.players;
+      trajectories = data.trajectories;
+      teamStyles = data.teamStyles;
+      curFormation = data.curFormation;
+      nextId = data.nextId;
+      updateFmtButtons();
+      autoSave();
+      render();
+      showToast('操作を取り消しました (Ctrl+Z)', 'info');
+    }
+
+    window.addEventListener('keydown', e => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        if (document.activeElement.tagName === 'INPUT') return;
+        e.preventDefault();
+        undo();
+      }
+    });
+
     // ==================== Save / Load ====================
     function getBoardData() {
       return {
         players: players.map(p => ({ ...p, color: teamStyles[p.team]?.bg, text_color: teamStyles[p.team]?.fg })),
-        teamStyles, formations: curFormation
+        teamStyles, formations: curFormation, trajectories
       };
     }
     async function saveBoard() {
@@ -948,6 +1099,7 @@
           if (!Array.isArray(data)) {
             if (data.teamStyles) teamStyles = data.teamStyles;
             if (data.formations) { curFormation = data.formations; updateFmtButtons(); }
+            if (data.trajectories) trajectories = data.trajectories;
           }
           players = []; nextId = 1;
           list.forEach(p => {
@@ -963,8 +1115,9 @@
     }
     function newBoard() {
       showConfirm('新規作成', '現在のボードをリセットして新規作成しますか？', () => {
+        recordAction();
         currentFileHandle = null;
-        players = []; selectedIds = [];
+        players = []; selectedIds = []; trajectories = [];
         teamStyles = { home: { bg: '#f8fafc', fg: 'black' }, away: { bg: '#1a6eb5', fg: 'white' }, ball: { bg: 'white', fg: 'black' } };
         changeFormation('home', '4-3-3'); changeFormation('away', '4-3-3');
         createPlayer(425, 250, '', 'BALL', 'ball'); autoSave(); render();
