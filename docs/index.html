@@ -592,8 +592,7 @@
 
     function changeFormation(team, fmt) {
       players = players.filter(p => p.team !== team);
-      selectedIds = selectedIds.filter(id => !players.find(p => p.id === id && p.team !== team) !== undefined ? false : true);
-      selectedIds = [];
+      selectedIds = selectedIds.filter(id => players.some(p => p.id === id));
       const prefix = team === 'home' ? 'H' : 'A';
       FORMATIONS[fmt].forEach(([px, py], i) => {
         const fx = team === 'home' ? px : 850 - px;
@@ -672,14 +671,13 @@
       const r = (p.team === 'ball' ? BALL_R : PLAYER_R);
       const sel = selectedIds.includes(p.id);
       ctx.save();
-      if (sel) { ctx.shadowColor = '#facc15'; ctx.shadowBlur = 14; }
-      // Drop shadow
-      if (p.team !== 'ball') {
-        ctx.fillStyle = 'rgba(0,0,0,0.25)';
-        ctx.beginPath(); ctx.ellipse(p.x + 1, p.y + 3, r * 0.85, r * 0.4, 0, 0, Math.PI * 2); ctx.fill();
-      }
+
+      // 選択時のハイライト設定
+      if (sel) { ctx.shadowColor = '#facc15'; ctx.shadowBlur = 12; }
+
       // Circle background
       ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+
       if (p.team === 'ball') {
         const grd = ctx.createRadialGradient(p.x - 3, p.y - 3, 1, p.x, p.y, r);
         grd.addColorStop(0, '#fff'); grd.addColorStop(1, '#ccc');
@@ -689,11 +687,18 @@
       }
       ctx.fill();
       // Border
-      ctx.strokeStyle = sel ? '#facc15' : 'rgba(0,0,0,0.45)';
+      ctx.strokeStyle = sel ? '#facc15' : 'rgba(0,0,0,0.3)';
       ctx.lineWidth = sel ? 3 : 1.5; ctx.stroke();
+
+      // 影（選手のみ、円の下に描画するために順序を調整）
+      if (p.team !== 'ball') {
+        ctx.fillStyle = 'rgba(0,0,0,0.2)';
+        ctx.beginPath(); ctx.ellipse(p.x + 1, p.y + 3, r * 0.8, r * 0.3, 0, 0, Math.PI * 2); ctx.fill();
+      }
+
       ctx.shadowBlur = 0;
       // Texts
-      ctx.font = `bold ${p.team === 'ball' ? 10 : 11}px 'Inter', sans-serif`;
+      ctx.font = `600 ${p.team === 'ball' ? 10 : 11}px 'Inter', sans-serif`;
       if (p.team !== 'ball') {
         ctx.fillStyle = style.fg;
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
