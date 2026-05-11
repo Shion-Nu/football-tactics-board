@@ -779,7 +779,17 @@
       ctx.setLineDash([]); ctx.restore();
     }
 
+    let renderPending = false;
     function render() {
+      if (renderPending) return;
+      renderPending = true;
+      requestAnimationFrame(() => {
+        doRender();
+        renderPending = false;
+      });
+    }
+
+    function doRender() {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, W, H);
       drawPitch();
