@@ -487,6 +487,7 @@
     </div>
     <div class="tdiv"></div>
     <button class="btn util-btn" onclick="newBoard()" id="btn-new">✨ 新規</button>
+    <button class="btn util-btn" onclick="undo()" id="btn-undo">↩️ 戻す</button>
     <button class="btn util-btn" onclick="saveBoard()" id="btn-save">💾 保存</button>
     <button class="btn util-btn" onclick="loadBoard()" id="btn-load">📂 読込</button>
     <button class="btn util-btn" onclick="clearTrajectories()" id="btn-clear-lines">✂️ 軌跡消去</button>
@@ -819,7 +820,8 @@
     // ==================== Mouse Events ====================
     canvas.addEventListener('mousedown', e => {
       if (e.button !== 0) return;
-      dragStartSnapshot = JSON.stringify({ players, trajectories, teamStyles, curFormation, nextId });
+      // 移動前の座標だけを記録（差分保存の準備）
+      dragStartSnapshot = players.map(p => ({ id: p.id, x: p.x, y: p.y }));
       const pos = getCanvasPos(e);
       mouseDownPos = pos; hasDragged = false;
       const p = getPlayerAt(pos.x, pos.y);
@@ -879,8 +881,9 @@
     canvas.addEventListener('mouseup', e => {
       if (e.button !== 0) return;
       if (hasDragged && dragStartSnapshot) {
+        // 全体JSONではなく、移動前の座標リスト（デルタ）のみを履歴に保存
         if (history.length >= MAX_HISTORY) history.shift();
-        history.push(dragStartSnapshot);
+        history.push({ type: 'move', data: dragStartSnapshot });
         dragStartSnapshot = null;
       }
       if (hasDragged && dragData && dragData.initialPositions) {
@@ -986,6 +989,7 @@
     function closeEditModal() { document.getElementById('edit-modal').classList.remove('open'); editingPlayerId = null; }
     function saveEditModal() {
       const p = players.find(pl => pl.id === editingPlayerId); if (!p) return;
+      recordAction();
       if (p.team !== 'ball') p.name = document.getElementById('edit-name').value;
       p.num = document.getElementById('edit-num').value;
       p.role = document.getElementById('edit-role').value;
@@ -1034,10 +1038,14 @@
     }
 
     // ==================== Global Undo (Ctrl+Z) ====================
-    function recordAction() {
-      const snapshot = JSON.stringify({ players, trajectories, teamStyles, curFormation, nextId });
+    function recordAction(type = 'full') {
+      // フォーメーション変更などの大きな変化は全体保存、それ以外はアクション別に拡張可能
+      let entry;
+      if (type === 'full') {
+        entry = { type: 'full', data: JSON.stringify({ players, trajectories, teamStyles, curFormation, nextId }) };
+      }
       if (history.length >= MAX_HISTORY) history.shift();
-      history.push(snapshot);
+      history.push(entry);
     }
 
     function undo() {
@@ -1045,12 +1053,24 @@
         showToast('戻れる操作がありません', 'info');
         return;
       }
-      const data = JSON.parse(history.pop());
-      players = data.players;
-      trajectories = data.trajectories;
-      teamStyles = data.teamStyles;
-      curFormation = data.curFormation;
-      nextId = data.nextId;
+      const lastAction = history.pop();
+
+      if (lastAction.type === 'move') {
+        // 移動差分のみを復元（データ量が非常に小さい）
+        lastAction.data.forEach(oldP => {
+          const p = players.find(ptr => ptr.id === oldP.id);
+          if (p) { p.x = oldP.x; p.y = oldP.y; }
+        });
+      } else if (lastAction.type === 'full') {
+        // 全体復元
+        const data = JSON.parse(lastAction.data);
+        players = data.players;
+        trajectories = data.trajectories;
+        teamStyles = data.teamStyles;
+        curFormation = data.curFormation;
+        nextId = data.nextId;
+      }
+
       updateFmtButtons();
       autoSave();
       render();
