@@ -621,10 +621,10 @@
     function addSubstitutes(team) {
       recordAction();
       const prefix = team === 'home' ? 'H' : 'A';
-      const startX = team === 'home' ? 40 : 470;
-      for (let i = 0; i < 11; i++) {
-        const px = i < 6 ? startX + i * 65 : startX + 32 + (i - 6) * 65;
-        const py = i < 6 ? 538 : 598;
+      const startX = team === 'home' ? 35 : 445;
+      for (let i = 0; i < 15; i++) {
+        const px = i < 8 ? startX + i * 52 : startX + 26 + (i - 8) * 52;
+        const py = i < 8 ? 538 : 598;
         createPlayer(px, py, String(12 + i), `${prefix}_${12 + i}`, team);
       }
       autoSave(); render();
