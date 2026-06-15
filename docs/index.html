@@ -488,7 +488,8 @@
     <div class="tdiv"></div>
     <button class="btn util-btn" onclick="newBoard()" id="btn-new">✨ 新規</button>
     <button class="btn util-btn" onclick="undo()" id="btn-undo">↩️ 戻す</button>
-    <button class="btn util-btn" onclick="saveBoard()" id="btn-save">💾 保存</button>
+    <button class="btn util-btn" onclick="saveBoard()" id="btn-save">💾 上書き保存</button>
+    <button class="btn util-btn" onclick="saveBoardAs()" id="btn-save-as">💾 名前を付けて保存</button>
     <button class="btn util-btn" onclick="loadBoard()" id="btn-load">📂 読込</button>
     <button class="btn util-btn" onclick="clearTrajectories()" id="btn-clear-lines">✂️ 軌跡消去</button>
   </div>
@@ -1093,21 +1094,42 @@
       };
     }
     async function saveBoard() {
+      if (!currentFileHandle && window.showSaveFilePicker) {
+        return saveBoardAs();
+      }
       const data = JSON.stringify(getBoardData(), null, 2);
-      if (window.showSaveFilePicker) {
+      if (window.showSaveFilePicker && currentFileHandle) {
         try {
-          if (!currentFileHandle) {
-            currentFileHandle = await window.showSaveFilePicker({
-              suggestedName: `tactics_${new Date().toISOString().slice(0, 10)}.json`,
-              types: [{ description: 'JSON File', accept: { 'application/json': ['.json'] } }],
-            });
-          }
           const writable = await currentFileHandle.createWritable();
           await writable.write(data);
           await writable.close();
-          showToast('💾 保存（上書き）しました', 'success');
+          showToast('💾 上書き保存しました', 'success');
         } catch (err) {
-          if (err.name !== 'AbortError') showToast('保存エラー: ' + err.message, 'error');
+          showToast('保存失敗: ' + err.message, 'error');
+        }
+      } else {
+        // File System Access API非対応ブラウザ、またはハンドルがない場合のフォールバック
+        const blob = new Blob([data], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `tactics_${new Date().toISOString().slice(0, 10)}.json`;
+        a.click(); showToast('💾 ダウンロード保存しました', 'success');
+      }
+    }
+    async function saveBoardAs() {
+      const data = JSON.stringify(getBoardData(), null, 2);
+      if (window.showSaveFilePicker) {
+        try {
+          currentFileHandle = await window.showSaveFilePicker({
+            suggestedName: `tactics_${new Date().toISOString().slice(0, 10)}.json`,
+            types: [{ description: 'JSON File', accept: { 'application/json': ['.json'] } }],
+          });
+          const writable = await currentFileHandle.createWritable();
+          await writable.write(data);
+          await writable.close();
+          showToast('💾 名前を付けて保存しました', 'success');
+        } catch (err) {
+          if (err.name !== 'AbortError') showToast('保存失敗: ' + err.message, 'error');
         }
       } else {
         const blob = new Blob([data], { type: 'application/json' });
