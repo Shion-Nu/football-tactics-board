@@ -1117,31 +1117,50 @@
         a.click(); showToast('💾 保存しました', 'success');
       }
     }
-    function loadBoard() { document.getElementById('file-input').click(); }
+    async function loadBoard() {
+      if (window.showOpenFilePicker) {
+        try {
+          const [handle] = await window.showOpenFilePicker({
+            types: [{ description: 'JSON File', accept: { 'application/json': ['.json'] } }],
+            multiple: false
+          });
+          currentFileHandle = handle;
+          const file = await handle.getFile();
+          const content = await file.text();
+          if (applyBoardData(content)) showToast('📂 読込完了', 'success');
+        } catch (err) {
+          if (err.name !== 'AbortError') showToast('読込失敗: ' + err.message, 'error');
+        }
+      } else {
+        document.getElementById('file-input').click();
+      }
+    }
     function handleFileLoad(e) {
       currentFileHandle = null;
       const file = e.target.files[0]; if (!file) return;
       const reader = new FileReader();
-      reader.onload = ev => {
-        try {
-          const data = JSON.parse(ev.target.result);
-          const list = Array.isArray(data) ? data : data.players || [];
-          if (!Array.isArray(data)) {
-            if (data.teamStyles) teamStyles = data.teamStyles;
-            if (data.formations) { curFormation = data.formations; updateFmtButtons(); }
-            if (data.trajectories) trajectories = data.trajectories;
-          }
-          players = []; nextId = 1;
-          list.forEach(p => {
-            const team = p.team || 'home';
-            if (p.color) { if (!teamStyles[team]) teamStyles[team] = { bg: 'white', fg: 'black' }; teamStyles[team].bg = p.color; if (p.text_color) teamStyles[team].fg = p.text_color; }
-            players.push({ id: p.id || `p_${nextId++}`, x: p.x, y: p.y, num: p.num || '', name: p.name || '', team, role: p.role || '', memo: p.memo || '' });
-          });
-          nextId = Math.max(nextId, players.length + 10);
-          selectedIds = []; autoSave(); render(); showToast('📂 読込完了', 'success');
-        } catch (err) { showToast('読込失敗: ' + err.message, 'error'); }
-      };
+      reader.onload = ev => { if (applyBoardData(ev.target.result)) showToast('📂 読込完了', 'success'); };
       reader.readAsText(file); e.target.value = '';
+    }
+    function applyBoardData(jsonText) {
+      try {
+        const data = JSON.parse(jsonText);
+        const list = Array.isArray(data) ? data : data.players || [];
+        if (!Array.isArray(data)) {
+          if (data.teamStyles) teamStyles = data.teamStyles;
+          if (data.formations) { curFormation = data.formations; updateFmtButtons(); }
+          if (data.trajectories) trajectories = data.trajectories;
+        }
+        players = []; nextId = 1;
+        list.forEach(p => {
+          const team = p.team || 'home';
+          if (p.color) { if (!teamStyles[team]) teamStyles[team] = { bg: 'white', fg: 'black' }; teamStyles[team].bg = p.color; if (p.text_color) teamStyles[team].fg = p.text_color; }
+          players.push({ id: p.id || `p_${nextId++}`, x: p.x, y: p.y, num: p.num || '', name: p.name || '', team, role: p.role || '', memo: p.memo || '' });
+        });
+        nextId = Math.max(nextId, players.length + 10);
+        selectedIds = []; autoSave(); render();
+        return true;
+      } catch (err) { showToast('読込失敗: ' + err.message, 'error'); return false; }
     }
     function newBoard() {
       showConfirm('新規作成', '現在のボードをリセットして新規作成しますか？', () => {
